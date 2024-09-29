@@ -1,7 +1,48 @@
 pico-8 cartridge // http://www.pico-8.com
 version 42
 __lua__
-hola
+
+function _init()
+    player_x = 8
+    player_y = 120
+    size_chunk = 8
+    sprite_player = 1
+    screen_size_x = 128
+    screen_size_y = 128
+end
+
+function _update()
+    if btnp(0) then
+        -- left
+        if player_x > 0 then
+            player_x -= size_chunk
+        end
+    end
+    if btnp(1) then
+        -- right
+        if player_x < screen_size_x - size_chunk then
+            player_x += size_chunk
+        end
+    end
+    if btnp(2) then
+        -- up
+        if player_y > 0  then
+            player_y -= size_chunk
+        end
+    end
+    if btnp(3) then
+        -- down
+        if player_y < screen_size_y - size_chunk then
+            player_y += size_chunk
+        end
+    end
+end
+
+function _draw()
+    cls()
+    spr(sprite_player, player_x, player_y)
+end
+
 __gfx__
 00000000000aa0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 0000000000aaaa000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
