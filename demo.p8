@@ -1,47 +1,83 @@
 pico-8 cartridge // http://www.pico-8.com
 version 42
 __lua__
-
 function _init()
-    player_x = 8
-    player_y = 120
+    -- Posición inicial del jugador
+    player_x = 64
+    player_y = 64
     size_chunk = 8
     sprite_player = 1
     screen_size_x = 128
     screen_size_y = 128
+
+    generate_map()
 end
 
 function _update()
+    -- Crear las variables para las nuevas posiciones del jugador
+    local new_x = player_x
+    local new_y = player_y
+
+    -- Mover según la entrada del jugador
     if btnp(0) then
-        -- left
-        if player_x > 0 then
-            player_x -= size_chunk
-        end
+        -- Izquierda
+        new_x = player_x - size_chunk
+    elseif btnp(1) then
+        -- Derecha
+        new_x = player_x + size_chunk
+    elseif btnp(2) then
+        -- Arriba
+        new_y = player_y - size_chunk
+    elseif btnp(3) then
+        -- Abajo
+        new_y = player_y + size_chunk
     end
-    if btnp(1) then
-        -- right
-        if player_x < screen_size_x - size_chunk then
-            player_x += size_chunk
-        end
-    end
-    if btnp(2) then
-        -- up
-        if player_y > 0  then
-            player_y -= size_chunk
-        end
-    end
-    if btnp(3) then
-        -- down
-        if player_y < screen_size_y - size_chunk then
-            player_y += size_chunk
-        end
+
+    -- Verificar colisiones con árboles antes de actualizar la posición
+    if not trees_collision(new_x, new_y) then
+        -- Si no hay colisión, actualizar la posición del jugador
+        player_x = new_x
+        player_y = new_y
     end
 end
 
 function _draw()
     cls()
+    -- Dibujar el mapa
+    map(0, 0, 0, 0, screen_size_x / size_chunk, screen_size_y / size_chunk)
+    -- Dibujar al jugador
     spr(sprite_player, player_x, player_y)
 end
+
+function generate_map()
+    -- Generar un mapa donde los bordes sean árboles (sprite 32) y el resto sea el suelo (sprite 16)
+    for y = 0, screen_size_x / size_chunk - 1 do
+        for x = 0, screen_size_y / size_chunk - 1 do
+            if x == 0 or x == screen_size_y / size_chunk - 1 or y == 0 or y == screen_size_x / size_chunk - 1 then
+                mset(x, y, 32) -- Árboles
+            else
+                mset(x, y, 16) -- Suelo
+            end
+        end
+    end
+end
+
+-- Función para verificar colisiones con los árboles
+function trees_collision(new_x, new_y)
+    -- Convertir la posición del jugador en coordenadas del tile
+    local tile_x = flr(new_x / size_chunk)
+    local tile_y = flr(new_y / size_chunk)
+    -- Obtener el sprite en esa posición
+    local sprite_colision = mget(tile_x, tile_y)
+    
+    -- Si el sprite es 32 (árbol), devolver true para indicar colisión
+    if sprite_colision == 32 then
+        return true
+    end
+    -- No hay colisión
+    return false
+end
+
 
 __gfx__
 00000000000aa0000000000000000000000000000000330000000000000000000000000000000000000000000000000000000000000000000000000000000000
