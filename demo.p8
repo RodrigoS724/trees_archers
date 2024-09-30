@@ -64,12 +64,24 @@ end
 Enemigo = setmetatable({}, Personaje)
 Enemigo.__index = Enemigo
 
-function Enemigo:Crear(x, y)
-    local enemigo = setmetatable(Personaje.Crear(self, x, y, 50), Enemigo)
+function Enemigo:Crear()
+    local enemigo
+    local x_aleatorio, y_aleatorio
+
+    -- Generar una posición aleatoria para el enemigo
+    repeat
+        x_aleatorio = flr(rnd(MUNDO_ANCHO - 2)) + 2 -- Dentro del rango del mapa
+        y_aleatorio = flr(rnd(MUNDO_ALTO - 3)) + 2 -- Evitar las bordes y la línea del jugador
+
+        -- Evitar que el enemigo aparezca sobre un árbol y en la misma línea que el jugador
+    until mapa[y_aleatorio][x_aleatorio] ~= 32 and y_aleatorio ~= flr(jugador.y / TILE_SIZE) + 1
+
+    enemigo = setmetatable(Personaje.Crear(self, x_aleatorio * TILE_SIZE, y_aleatorio * TILE_SIZE, 50), Enemigo)
     enemigo.direccion = -1 -- Inicia moviéndose hacia la izquierda
     enemigo.velocidad = 1 -- Velocidad de movimiento
     return enemigo
 end
+
 
 function Enemigo:Movimiento()
     -- Mover en la dirección actual
@@ -205,7 +217,8 @@ function Enemigo:Destruir()
 end
 
 -- CICLO DEL JUEGO
-enemigos = { Enemigo:Crear(20, 30), Enemigo:Crear(50, 70) }
+jugador = nil
+enemigos = {}
 flechas = {}
 
 function _init()
@@ -214,7 +227,13 @@ function _init()
 
     -- Crear al jugador después de generar el mapa
     jugador = Jugador:Crear()
+
+    -- Crear una lista de enemigos en posiciones aleatorias
+    for i = 1, 5 do  -- Puedes cambiar el número de enemigos
+        add(enemigos, Enemigo:Crear())
+    end
 end
+
 
 
 -- Verifica si todos los enemigos han sido eliminados
