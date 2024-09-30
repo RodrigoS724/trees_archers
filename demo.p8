@@ -1,7 +1,6 @@
 pico-8 cartridge // http://www.pico-8.com
 version 42
 __lua__
-
 -- ENTIDAD BASE
 Entidad = {}
 Entidad.__index = Entidad
@@ -237,7 +236,12 @@ function _draw()
 
     -- Dibujar enemigos
     for enemigo in all(enemigos) do
-        spr(5, enemigo.x, enemigo.y)
+        -- Invertir el sprite dependiendo de la dirección
+        if enemigo.direccion == 1 then
+            spr(5, enemigo.x, enemigo.y) -- Sprite mirando a la derecha
+        else
+            spr(5, enemigo.x + enemigo.ancho, enemigo.y, 1, 1, true) -- Sprite mirando a la izquierda
+        end
     end
 
     -- Dibujar flechas
@@ -245,6 +249,7 @@ function _draw()
         spr(48, flecha.x, flecha.y)
     end
 end
+
 
 __gfx__
 00000000000aa0000000000000000000000000000000330000000000000000000000000000000000000000000000000000000000000000000000000000000000
