@@ -39,10 +39,20 @@ end
 Jugador = setmetatable({}, Personaje)
 Jugador.__index = Jugador
 
-function Jugador:Crear(x, y)
-    local jugador = setmetatable(Personaje.Crear(self, x, y, 100), Jugador)
+function Jugador:Crear()
+    -- Posición inicial en el centro inferior del mapa
+    local x_inicial = flr(MUNDO_ANCHO / 2) * TILE_SIZE
+    local y_inicial = (MUNDO_ALTO - 2) * TILE_SIZE -- Segunda fila desde abajo
+
+    -- Evitar que el jugador aparezca sobre un árbol
+    while mapa[flr(y_inicial / TILE_SIZE) + 1][flr(x_inicial / TILE_SIZE) + 1] == 32 do
+        x_inicial += TILE_SIZE -- Mover a la derecha hasta encontrar terreno libre
+    end
+
+    local jugador = setmetatable(Personaje.Crear(self, x_inicial, y_inicial, 100), Jugador)
     return jugador
 end
+
 
 function Jugador:Morir()
     -- Lógica para morir (puedes definir cómo quieres manejar esto)
@@ -195,13 +205,17 @@ function Enemigo:Destruir()
 end
 
 -- CICLO DEL JUEGO
-jugador = Jugador:Crear(10, 10)
 enemigos = { Enemigo:Crear(20, 30), Enemigo:Crear(50, 70) }
 flechas = {}
 
 function _init()
+    -- Generar el mapa antes de crear al jugador
     Mundo:Generar()
+
+    -- Crear al jugador después de generar el mapa
+    jugador = Jugador:Crear()
 end
+
 
 -- Verifica si todos los enemigos han sido eliminados
 function VerificarAperturaPuerta()
@@ -218,6 +232,7 @@ function VerificarAperturaPuerta()
 end
 
 -- Actualiza la función de _update para verificar si se debe abrir la puerta
+
 function _update()
     -- Actualizar jugador
     if btn(0) then jugador:Movimiento(-1, 0) end
