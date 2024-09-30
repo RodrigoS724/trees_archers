@@ -203,6 +203,21 @@ function _init()
     Mundo:Generar()
 end
 
+-- Verifica si todos los enemigos han sido eliminados
+function VerificarAperturaPuerta()
+    if #enemigos == 0 then
+        -- Eliminar dos árboles (tiles con valor 32) en la parte superior central
+        local puerta_x1 = flr(MUNDO_ANCHO / 2) -- Posición x del primer árbol
+        local puerta_x2 = puerta_x1 + 1 -- Posición x del segundo árbol
+        local puerta_y = 1 -- Parte superior del mapa (línea 1)
+
+        -- Cambiar los árboles por terreno (tile con valor 16)
+        mapa[puerta_y][puerta_x1] = 16
+        mapa[puerta_y][puerta_x2] = 16
+    end
+end
+
+-- Actualiza la función de _update para verificar si se debe abrir la puerta
 function _update()
     -- Actualizar jugador
     if btn(0) then jugador:Movimiento(-1, 0) end
@@ -224,7 +239,11 @@ function _update()
     for enemigo in all(enemigos) do
         enemigo:Movimiento() -- Mover enemigo
     end
+
+    -- Verificar si todos los enemigos han sido eliminados para abrir la puerta
+    VerificarAperturaPuerta()
 end
+
 
 function _draw()
     cls()
