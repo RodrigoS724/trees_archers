@@ -9,6 +9,8 @@ function Entidad:Crear(x, y)
     local entidad = setmetatable({}, Entidad)
     entidad.x = x or 0
     entidad.y = y or 0
+    entidad.ancho = 8  -- Tamaño en píxeles
+    entidad.alto = 8
     return entidad
 end
 
@@ -22,9 +24,14 @@ function Personaje:Crear(x, y, vida)
     return personaje
 end
 
+-- Movimiento del personaje con colisión en todo el sprite (AABB)
 function Personaje:Movimiento(dx, dy)
-    self.x += dx
-    self.y += dy
+    local nuevo_x = self.x + dx
+    local nuevo_y = self.y + dy
+    if not ColisionConTerrenoCompleto(nuevo_x, nuevo_y, self.ancho, self.alto) then
+        self.x = nuevo_x
+        self.y = nuevo_y
+    end
 end
 
 -- JUGADOR
@@ -57,31 +64,35 @@ end
 
 function Flecha:Comportamiento()
     self.y -= self.velocidad
+    -- Si la flecha colisiona con un árbol o enemigo, desaparece
+    if ColisionConTerrenoCompleto(self.x, self.y, self.ancho, self.alto) or ColisionConEnemigos(self) then
+        self:Destruir()
+    end
+end
+
+function Flecha:Destruir()
+    -- Elimina la flecha de la lista de flechas
+    del(flechas, self)
 end
 
 -- MUNDO
 Mundo = {}
 Mundo.__index = Mundo
 
--- Dimensiones del mapa (por ejemplo, 16x16 tiles)
 MUNDO_ANCHO = 16
 MUNDO_ALTO = 16
 TILE_SIZE = 8
 
--- Constructor de Mundo
 function Mundo:Generar()
-    -- Inicializa el mapa
     mapa = {}
     for y = 1, MUNDO_ALTO do
         mapa[y] = {}
         for x = 1, MUNDO_ANCHO do
             if x == 1 or x == MUNDO_ANCHO or y == 1 or y == MUNDO_ALTO then
-                -- Periferia del mapa con れくrboles (sprite 32)
-                mapa[y][x] = 32
+                mapa[y][x] = 32  -- Árboles en la periferia
             else
-                -- Aれねade terreno (sprite 16) con posibilidad de れくrboles
                 if rnd(1) < 0.1 then
-                    mapa[y][x] = 32  -- れ▒rbol disperso
+                    mapa[y][x] = 32  -- Árbol disperso
                 else
                     mapa[y][x] = 16  -- Terreno
                 end
@@ -90,7 +101,6 @@ function Mundo:Generar()
     end
 end
 
--- Dibuja el mapa
 function Mundo:Dibujar()
     for y = 1, MUNDO_ALTO do
         for x = 1, MUNDO_ANCHO do
@@ -99,10 +109,51 @@ function Mundo:Dibujar()
     end
 end
 
--- SPRITES
-function CargarSprites()
-    -- Cargar sprites especれとficos, ya configurados:
-    -- 1: Jugador, 5: Enemigo, 16: Terreno, 32: れ▒rbol, 48: Flecha
+-- FUNCIONES DE COLISIÓN
+
+-- Verifica si una posición (x, y, ancho, alto) está colisionando con un árbol en cualquier parte del sprite (AABB)
+function ColisionConTerrenoCompleto(x, y, ancho, alto)
+    local tile_x1 = flr(x / TILE_SIZE) + 1
+    local tile_y1 = flr(y / TILE_SIZE) + 1
+    local tile_x2 = flr((x + ancho - 1) / TILE_SIZE) + 1
+    local tile_y2 = flr((y + alto - 1) / TILE_SIZE) + 1
+
+    if mapa[tile_y1] and (mapa[tile_y1][tile_x1] == 32 or mapa[tile_y1][tile_x2] == 32) then
+        return true
+    end
+
+    if mapa[tile_y2] and (mapa[tile_y2][tile_x1] == 32 or mapa[tile_y2][tile_x2] == 32) then
+        return true
+    end
+
+    return false
+end
+
+-- Verifica si una entidad (como una flecha) colisiona con un enemigo
+function ColisionConEnemigos(entidad)
+    for enemigo in all(enemigos) do
+        if entidad.x < enemigo.x + enemigo.ancho and
+           entidad.x + entidad.ancho > enemigo.x and
+           entidad.y < enemigo.y + enemigo.alto and
+           entidad.y + entidad.alto > enemigo.y then
+            -- Colisiona con el enemigo
+            enemigo:RecibirDanio()
+            return true
+        end
+    end
+    return false
+end
+
+-- Sistema de daño para enemigos
+function Enemigo:RecibirDanio()
+    self.vida -= 10
+    if self.vida <= 0 then
+        self:Destruir()
+    end
+end
+
+function Enemigo:Destruir()
+    del(enemigos, self)
 end
 
 -- CICLO DEL JUEGO
@@ -112,7 +163,6 @@ flechas = {}
 
 function _init()
     Mundo:Generar()
-    CargarSprites()
 end
 
 function _update()
@@ -132,17 +182,17 @@ function _update()
         flecha:Comportamiento()
     end
 
-    -- Lれはgica de enemigos y colisiones (pendiente)
+    -- Lógica de enemigos y colisiones entre personajes y el terreno
 end
 
 function _draw()
     cls()
     -- Dibujar el mapa
     Mundo:Dibujar()
-    
+
     -- Dibujar jugador
     spr(1, jugador.x, jugador.y)
-    
+
     -- Dibujar enemigos
     for enemigo in all(enemigos) do
         spr(5, enemigo.x, enemigo.y)
@@ -153,6 +203,7 @@ function _draw()
         spr(48, flecha.x, flecha.y)
     end
 end
+
 
 __gfx__
 00000000000aa0000000000000000000000000000000330000000000000000000000000000000000000000000000000000000000000000000000000000000000
