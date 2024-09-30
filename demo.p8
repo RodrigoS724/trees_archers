@@ -1,6 +1,7 @@
 pico-8 cartridge // http://www.pico-8.com
 version 42
 __lua__
+
 -- ENTIDAD BASE
 Entidad = {}
 Entidad.__index = Entidad
@@ -9,7 +10,8 @@ function Entidad:Crear(x, y)
     local entidad = setmetatable({}, Entidad)
     entidad.x = x or 0
     entidad.y = y or 0
-    entidad.ancho = 8  -- Tamaño en píxeles
+    entidad.ancho = 8
+    -- Tamaño en píxeles
     entidad.alto = 8
     return entidad
 end
@@ -59,13 +61,15 @@ Flecha.__index = Flecha
 function Flecha:Crear(x, y, velocidad)
     local flecha = setmetatable(Entidad.Crear(self, x, y), Flecha)
     flecha.velocidad = velocidad or 2
+    flecha.ancho = 4
+    -- Ancho de colisión reducido
     return flecha
 end
 
 function Flecha:Comportamiento()
     self.y -= self.velocidad
     -- Si la flecha colisiona con un árbol o enemigo, desaparece
-    if ColisionConTerrenoCompleto(self.x, self.y, self.ancho, self.alto) or ColisionConEnemigos(self) then
+    if ColisionConTerrenoCompleto(self.x + (8 - self.ancho) / 2, self.y, self.ancho, self.alto) or ColisionConEnemigos(self) then
         self:Destruir()
     end
 end
@@ -89,12 +93,12 @@ function Mundo:Generar()
         mapa[y] = {}
         for x = 1, MUNDO_ANCHO do
             if x == 1 or x == MUNDO_ANCHO or y == 1 or y == MUNDO_ALTO then
-                mapa[y][x] = 32  -- Árboles en la periferia
+                mapa[y][x] = 32 -- Árboles en la periferia
             else
                 if rnd(1) < 0.1 then
-                    mapa[y][x] = 32  -- Árbol disperso
+                    mapa[y][x] = 32 -- Árbol disperso
                 else
-                    mapa[y][x] = 16  -- Terreno
+                    mapa[y][x] = 16 -- Terreno
                 end
             end
         end
@@ -132,10 +136,10 @@ end
 -- Verifica si una entidad (como una flecha) colisiona con un enemigo
 function ColisionConEnemigos(entidad)
     for enemigo in all(enemigos) do
-        if entidad.x < enemigo.x + enemigo.ancho and
-           entidad.x + entidad.ancho > enemigo.x and
-           entidad.y < enemigo.y + enemigo.alto and
-           entidad.y + entidad.alto > enemigo.y then
+        if entidad.x < enemigo.x + enemigo.ancho
+                and entidad.x + entidad.ancho > enemigo.x
+                and entidad.y < enemigo.y + enemigo.alto
+                and entidad.y + entidad.alto > enemigo.y then
             -- Colisiona con el enemigo
             enemigo:RecibirDanio()
             return true
@@ -158,7 +162,7 @@ end
 
 -- CICLO DEL JUEGO
 jugador = Jugador:Crear(10, 10)
-enemigos = {Enemigo:Crear(20, 30), Enemigo:Crear(50, 70)}
+enemigos = { Enemigo:Crear(20, 30), Enemigo:Crear(50, 70) }
 flechas = {}
 
 function _init()
@@ -203,7 +207,6 @@ function _draw()
         spr(48, flecha.x, flecha.y)
     end
 end
-
 
 __gfx__
 00000000000aa0000000000000000000000000000000330000000000000000000000000000000000000000000000000000000000000000000000000000000000
