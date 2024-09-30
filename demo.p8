@@ -11,7 +11,7 @@ function Entidad:Crear(x, y)
     entidad.x = x or 0
     entidad.y = y or 0
     entidad.ancho = 8
-    -- Tamaño en píxeles
+    -- Tamaれねo en pれとxeles
     entidad.alto = 8
     return entidad
 end
@@ -26,7 +26,7 @@ function Personaje:Crear(x, y, vida)
     return personaje
 end
 
--- Movimiento del personaje con colisión en todo el sprite (AABB)
+-- Movimiento del personaje con colisiれはn en todo el sprite (AABB)
 function Personaje:Movimiento(dx, dy)
     local nuevo_x = self.x + dx
     local nuevo_y = self.y + dy
@@ -62,13 +62,13 @@ function Flecha:Crear(x, y, velocidad)
     local flecha = setmetatable(Entidad.Crear(self, x, y), Flecha)
     flecha.velocidad = velocidad or 2
     flecha.ancho = 4
-    -- Ancho de colisión reducido
+    -- Ancho de colisiれはn reducido
     return flecha
 end
 
 function Flecha:Comportamiento()
     self.y -= self.velocidad
-    -- Si la flecha colisiona con un árbol o enemigo, desaparece
+    -- Si la flecha colisiona con un れくrbol o enemigo, desaparece
     if ColisionConTerrenoCompleto(self.x + (8 - self.ancho) / 2, self.y, self.ancho, self.alto) or ColisionConEnemigos(self) then
         self:Destruir()
     end
@@ -93,10 +93,10 @@ function Mundo:Generar()
         mapa[y] = {}
         for x = 1, MUNDO_ANCHO do
             if x == 1 or x == MUNDO_ANCHO or y == 1 or y == MUNDO_ALTO then
-                mapa[y][x] = 32 -- Árboles en la periferia
+                mapa[y][x] = 32 -- れ▒rboles en la periferia
             else
                 if rnd(1) < 0.1 then
-                    mapa[y][x] = 32 -- Árbol disperso
+                    mapa[y][x] = 32 -- れ▒rbol disperso
                 else
                     mapa[y][x] = 16 -- Terreno
                 end
@@ -113,9 +113,9 @@ function Mundo:Dibujar()
     end
 end
 
--- FUNCIONES DE COLISIÓN
+-- FUNCIONES DE COLISIれ⧗N
 
--- Verifica si una posición (x, y, ancho, alto) está colisionando con un árbol en cualquier parte del sprite (AABB)
+-- Verifica si una posiciれはn (x, y, ancho, alto) estれく colisionando con un れくrbol en cualquier parte del sprite (AABB)
 function ColisionConTerrenoCompleto(x, y, ancho, alto)
     local tile_x1 = flr(x / TILE_SIZE) + 1
     local tile_y1 = flr(y / TILE_SIZE) + 1
@@ -148,7 +148,7 @@ function ColisionConEnemigos(entidad)
     return false
 end
 
--- Sistema de daño para enemigos
+-- Sistema de daれねo para enemigos
 function Enemigo:RecibirDanio()
     self.vida -= 10
     if self.vida <= 0 then
@@ -186,7 +186,7 @@ function _update()
         flecha:Comportamiento()
     end
 
-    -- Lógica de enemigos y colisiones entre personajes y el terreno
+    -- Lれはgica de enemigos y colisiones entre personajes y el terreno
 end
 
 function _draw()
@@ -211,10 +211,10 @@ end
 __gfx__
 00000000000aa0000000000000000000000000000000330000000000000000000000000000000000000000000000000000000000000000000000000000000000
 0000000000aaaa000000000000000000000000000003300000000000000000000000000000000000000000000000000000000000000000000000000000000000
-007007000a0aa0a00000000000000000000000000008800700000000000000000000000000000000000000000000000000000000000000000000000000000000
+007007000a5aa5a00000000000000000000000000008800700000000000000000000000000000000000000000000000000000000000000000000000000000000
 00077000a9aaaa9a0000000000000000000000000088880d00000000000000000000000000000000000000000000000000000000000000000000000000000000
-00077000aaaaa0aa0000000000000000000000000088880d00000000000000000000000000000000000000000000000000000000000000000000000000000000
-007007000aa00aa00000000000000000000000000008885d00000000000000000000000000000000000000000000000000000000000000000000000000000000
+00077000aaaaa5aa0000000000000000000000000088880d00000000000000000000000000000000000000000000000000000000000000000000000000000000
+007007000aa55aa00000000000000000000000000008885d00000000000000000000000000000000000000000000000000000000000000000000000000000000
 0000000000aaaa000000000000000000000000000008880d00000000000000000000000000000000000000000000000000000000000000000000000000000000
 00000000000aa0000000000000000000000000000088800d00000000000000000000000000000000000000000000000000000000000000000000000000000000
 ffffffff000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
