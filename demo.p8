@@ -11,7 +11,7 @@ function Entidad:Crear(x, y)
     entidad.x = x or 0
     entidad.y = y or 0
     entidad.ancho = 8
-    -- Tamaれねo en pれとxeles
+    -- Tamaño en píxeles
     entidad.alto = 8
     return entidad
 end
@@ -26,7 +26,7 @@ function Personaje:Crear(x, y, vida)
     return personaje
 end
 
--- Movimiento del personaje con colisiれはn en todo el sprite (AABB)
+-- Movimiento del personaje con colisión en todo el sprite (AABB)
 function Personaje:Movimiento(dx, dy)
     local nuevo_x = self.x + dx
     local nuevo_y = self.y + dy
@@ -45,13 +45,48 @@ function Jugador:Crear(x, y)
     return jugador
 end
 
+function Jugador:Morir()
+    -- Lógica para morir (puedes definir cómo quieres manejar esto)
+    print("¡El jugador ha muerto!")
+    -- Aquí puedes añadir más lógica, como reiniciar el juego
+end
+
 -- ENEMIGO
 Enemigo = setmetatable({}, Personaje)
 Enemigo.__index = Enemigo
 
 function Enemigo:Crear(x, y)
     local enemigo = setmetatable(Personaje.Crear(self, x, y, 50), Enemigo)
+    enemigo.direccion = -1 -- Inicia moviéndose hacia la izquierda
+    enemigo.velocidad = 1 -- Velocidad de movimiento
     return enemigo
+end
+
+function Enemigo:Movimiento()
+    -- Mover en la dirección actual
+    local dx = self.direccion * self.velocidad
+
+    if not ColisionConTerrenoCompleto(self.x + dx, self.y, self.ancho, self.alto) then
+        self.x += dx
+    else
+        -- Cambiar de dirección al colisionar
+        self.direccion *= -1
+    end
+
+    -- Verificar colisión con el jugador
+    if self:ColisionConJugador() then
+        Jugador:Morir() -- Llamar a la función de morir del jugador
+    end
+end
+
+function Enemigo:ColisionConJugador()
+    if self.x < jugador.x + jugador.ancho
+            and self.x + self.ancho > jugador.x
+            and self.y < jugador.y + jugador.alto
+            and self.y + self.alto > jugador.y then
+        return true
+    end
+    return false
 end
 
 -- FLECHA
@@ -62,13 +97,13 @@ function Flecha:Crear(x, y, velocidad)
     local flecha = setmetatable(Entidad.Crear(self, x, y), Flecha)
     flecha.velocidad = velocidad or 2
     flecha.ancho = 4
-    -- Ancho de colisiれはn reducido
+    -- Ancho de colisión reducido
     return flecha
 end
 
 function Flecha:Comportamiento()
     self.y -= self.velocidad
-    -- Si la flecha colisiona con un れくrbol o enemigo, desaparece
+    -- Si la flecha colisiona con un árbol o enemigo, desaparece
     if ColisionConTerrenoCompleto(self.x + (8 - self.ancho) / 2, self.y, self.ancho, self.alto) or ColisionConEnemigos(self) then
         self:Destruir()
     end
@@ -93,10 +128,10 @@ function Mundo:Generar()
         mapa[y] = {}
         for x = 1, MUNDO_ANCHO do
             if x == 1 or x == MUNDO_ANCHO or y == 1 or y == MUNDO_ALTO then
-                mapa[y][x] = 32 -- れ▒rboles en la periferia
+                mapa[y][x] = 32 -- Árboles en la periferia
             else
                 if rnd(1) < 0.1 then
-                    mapa[y][x] = 32 -- れ▒rbol disperso
+                    mapa[y][x] = 32 -- Árbol disperso
                 else
                     mapa[y][x] = 16 -- Terreno
                 end
@@ -113,9 +148,9 @@ function Mundo:Dibujar()
     end
 end
 
--- FUNCIONES DE COLISIれ⧗N
+-- FUNCIONES DE COLISIÓN
 
--- Verifica si una posiciれはn (x, y, ancho, alto) estれく colisionando con un れくrbol en cualquier parte del sprite (AABB)
+-- Verifica si una posición (x, y, ancho, alto) está colisionando con un árbol en cualquier parte del sprite (AABB)
 function ColisionConTerrenoCompleto(x, y, ancho, alto)
     local tile_x1 = flr(x / TILE_SIZE) + 1
     local tile_y1 = flr(y / TILE_SIZE) + 1
@@ -148,7 +183,7 @@ function ColisionConEnemigos(entidad)
     return false
 end
 
--- Sistema de daれねo para enemigos
+-- Sistema de daño para enemigos
 function Enemigo:RecibirDanio()
     self.vida -= 10
     if self.vida <= 0 then
@@ -186,7 +221,10 @@ function _update()
         flecha:Comportamiento()
     end
 
-    -- Lれはgica de enemigos y colisiones entre personajes y el terreno
+    -- Actualizar enemigos
+    for enemigo in all(enemigos) do
+        enemigo:Movimiento() -- Mover enemigo
+    end
 end
 
 function _draw()
