@@ -110,10 +110,19 @@ function Enemigo:ColisionConJugador()
             and self.x + self.ancho > jugador.x
             and self.y < jugador.y + jugador.alto
             and self.y + self.alto > jugador.y then
+        -- Reducir una vida
+        vidas -= 1
+
+        -- Verificar si el jugador ha perdido todas las vidas
+        if vidas <= 0 then
+            Jugador:Morir() -- Llamar a la función de morir del jugador
+        end
+
         return true
     end
     return false
 end
+
 
 -- FLECHA
 Flecha = setmetatable({}, Entidad)
@@ -225,19 +234,21 @@ end
 jugador = nil
 enemigos = {}
 flechas = {}
+vidas = 3
 
 function _init()
     -- Generar el mapa antes de crear al jugador
     Mundo:Generar()
 
-    -- Crear al jugador despuれたs de generar el mapa
+    -- Crear al jugador después de generar el mapa
     jugador = Jugador:Crear()
 
     -- Crear una lista de enemigos en posiciones aleatorias
-    for i = 1, 5 do  -- Puedes cambiar el nれむmero de enemigos
+    for i = 1, 5 do  -- Puedes cambiar el número de enemigos
         add(enemigos, Enemigo:Crear())
     end
 end
+
 
 
 
@@ -294,19 +305,30 @@ function _draw()
 
     -- Dibujar enemigos
     for enemigo in all(enemigos) do
-        -- Invertir el sprite dependiendo de la direcciれはn
+        -- Invertir el sprite dependiendo de la dirección
         if enemigo.direccion == 1 then
             spr(5, enemigo.x + enemigo.ancho, enemigo.y, 1, 1, true) -- Sprite mirando a la izquierda
-          else    
+        else    
             spr(5, enemigo.x, enemigo.y) -- Sprite mirando a la derecha
-         end
+        end
     end
 
     -- Dibujar flechas
     for flecha in all(flechas) do
         spr(48, flecha.x, flecha.y)
     end
+
+    -- Dibujar corazones (vidas restantes)
+    for i = 1, vidas do
+        spr(80, 8 * i, 8) -- Dibujar corazones en la parte superior de la pantalla
+    end
+
+    -- Mostrar mensaje de muerte si el jugador no tiene vidas
+    if vidas <= 0 then
+        print("¡Has muerto!", 50, 60, 8) -- Mostrar en el centro de la pantalla
+    end
 end
+
 
 
 __gfx__
