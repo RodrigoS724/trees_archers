@@ -10,7 +10,7 @@ function Entidad:Crear(x, y)
     entidad.x = x or 0
     entidad.y = y or 0
     entidad.ancho = 8
-    -- Tamaño en píxeles
+    -- Tamaれねo en pれとxeles
     entidad.alto = 8
     return entidad
 end
@@ -25,7 +25,7 @@ function Personaje:Crear(x, y, vida)
     return personaje
 end
 
--- Movimiento del personaje con colisión en todo el sprite (AABB)
+-- Movimiento del personaje con colisiれはn en todo el sprite (AABB)
 function Personaje:Movimiento(dx, dy)
     local nuevo_x = self.x + dx
     local nuevo_y = self.y + dy
@@ -40,11 +40,11 @@ Jugador = setmetatable({}, Personaje)
 Jugador.__index = Jugador
 
 function Jugador:Crear()
-    -- Posición inicial en el centro inferior del mapa
+    -- Posiciれはn inicial en el centro inferior del mapa
     local x_inicial = flr(MUNDO_ANCHO / 2) * TILE_SIZE
     local y_inicial = (MUNDO_ALTO - 2) * TILE_SIZE -- Segunda fila desde abajo
 
-    -- Evitar que el jugador aparezca sobre un árbol
+    -- Evitar que el jugador aparezca sobre un れくrbol
     while mapa[flr(y_inicial / TILE_SIZE) + 1][flr(x_inicial / TILE_SIZE) + 1] == 32 do
         x_inicial += TILE_SIZE -- Mover a la derecha hasta encontrar terreno libre
     end
@@ -55,9 +55,9 @@ end
 
 
 function Jugador:Morir()
-    -- Lógica para morir (puedes definir cómo quieres manejar esto)
-    print("¡El jugador ha muerto!")
-    -- Aquí puedes añadir más lógica, como reiniciar el juego
+    -- Lれはgica para morir (puedes definir cれはmo quieres manejar esto)
+    print("るくEl jugador ha muerto!")
+    -- Aquれと puedes aれねadir mれくs lれはgica, como reiniciar el juego
 end
 
 -- ENEMIGO
@@ -68,35 +68,35 @@ function Enemigo:Crear()
     local enemigo
     local x_aleatorio, y_aleatorio
 
-    -- Generar una posición aleatoria para el enemigo
+    -- Generar una posiciれはn aleatoria para el enemigo
     repeat
         x_aleatorio = flr(rnd(MUNDO_ANCHO - 2)) + 2 -- Dentro del rango del mapa
-        y_aleatorio = flr(rnd(MUNDO_ALTO - 3)) + 2 -- Evitar las bordes y la línea del jugador
+        y_aleatorio = flr(rnd(MUNDO_ALTO - 3)) + 2 -- Evitar las bordes y la lれとnea del jugador
 
-        -- Evitar que el enemigo aparezca sobre un árbol y en la misma línea que el jugador
+        -- Evitar que el enemigo aparezca sobre un れくrbol y en la misma lれとnea que el jugador
     until mapa[y_aleatorio][x_aleatorio] ~= 32 and y_aleatorio ~= flr(jugador.y / TILE_SIZE) + 1
 
     enemigo = setmetatable(Personaje.Crear(self, x_aleatorio * TILE_SIZE, y_aleatorio * TILE_SIZE, 50), Enemigo)
-    enemigo.direccion = -1 -- Inicia moviéndose hacia la izquierda
+    enemigo.direccion = -1 -- Inicia moviれたndose hacia la izquierda
     enemigo.velocidad = 1 -- Velocidad de movimiento
     return enemigo
 end
 
 
 function Enemigo:Movimiento()
-    -- Mover en la dirección actual
+    -- Mover en la direcciれはn actual
     local dx = self.direccion * self.velocidad
 
     if not ColisionConTerrenoCompleto(self.x + dx, self.y, self.ancho, self.alto) then
         self.x += dx
     else
-        -- Cambiar de dirección al colisionar
+        -- Cambiar de direcciれはn al colisionar
         self.direccion *= -1
     end
 
-    -- Verificar colisión con el jugador
+    -- Verificar colisiれはn con el jugador
     if self:ColisionConJugador() then
-        Jugador:Morir() -- Llamar a la función de morir del jugador
+        Jugador:Morir() -- Llamar a la funciれはn de morir del jugador
     end
 end
 
@@ -118,13 +118,13 @@ function Flecha:Crear(x, y, velocidad)
     local flecha = setmetatable(Entidad.Crear(self, x, y), Flecha)
     flecha.velocidad = velocidad or 2
     flecha.ancho = 4
-    -- Ancho de colisión reducido
+    -- Ancho de colisiれはn reducido
     return flecha
 end
 
 function Flecha:Comportamiento()
     self.y -= self.velocidad
-    -- Si la flecha colisiona con un árbol o enemigo, desaparece
+    -- Si la flecha colisiona con un れくrbol o enemigo, desaparece
     if ColisionConTerrenoCompleto(self.x + (8 - self.ancho) / 2, self.y, self.ancho, self.alto) or ColisionConEnemigos(self) then
         self:Destruir()
     end
@@ -149,10 +149,10 @@ function Mundo:Generar()
         mapa[y] = {}
         for x = 1, MUNDO_ANCHO do
             if x == 1 or x == MUNDO_ANCHO or y == 1 or y == MUNDO_ALTO then
-                mapa[y][x] = 32 -- Árboles en la periferia
+                mapa[y][x] = 32 -- れ▒rboles en la periferia
             else
                 if rnd(1) < 0.1 then
-                    mapa[y][x] = 32 -- Árbol disperso
+                    mapa[y][x] = 32 -- れ▒rbol disperso
                 else
                     mapa[y][x] = 16 -- Terreno
                 end
@@ -169,9 +169,9 @@ function Mundo:Dibujar()
     end
 end
 
--- FUNCIONES DE COLISIÓN
+-- FUNCIONES DE COLISIれ⧗N
 
--- Verifica si una posición (x, y, ancho, alto) está colisionando con un árbol en cualquier parte del sprite (AABB)
+-- Verifica si una posiciれはn (x, y, ancho, alto) estれく colisionando con un れくrbol en cualquier parte del sprite (AABB)
 function ColisionConTerrenoCompleto(x, y, ancho, alto)
     local tile_x1 = flr(x / TILE_SIZE) + 1
     local tile_y1 = flr(y / TILE_SIZE) + 1
@@ -204,7 +204,7 @@ function ColisionConEnemigos(entidad)
     return false
 end
 
--- Sistema de daño para enemigos
+-- Sistema de daれねo para enemigos
 function Enemigo:RecibirDanio()
     self.vida -= 10
     if self.vida <= 0 then
@@ -225,11 +225,11 @@ function _init()
     -- Generar el mapa antes de crear al jugador
     Mundo:Generar()
 
-    -- Crear al jugador después de generar el mapa
+    -- Crear al jugador despuれたs de generar el mapa
     jugador = Jugador:Crear()
 
     -- Crear una lista de enemigos en posiciones aleatorias
-    for i = 1, 5 do  -- Puedes cambiar el número de enemigos
+    for i = 1, 5 do  -- Puedes cambiar el nれむmero de enemigos
         add(enemigos, Enemigo:Crear())
     end
 end
@@ -239,18 +239,18 @@ end
 -- Verifica si todos los enemigos han sido eliminados
 function VerificarAperturaPuerta()
     if #enemigos == 0 then
-        -- Eliminar dos árboles (tiles con valor 32) en la parte superior central
-        local puerta_x1 = flr(MUNDO_ANCHO / 2) -- Posición x del primer árbol
-        local puerta_x2 = puerta_x1 + 1 -- Posición x del segundo árbol
-        local puerta_y = 1 -- Parte superior del mapa (línea 1)
+        -- Eliminar dos れくrboles (tiles con valor 32) en la parte superior central
+        local puerta_x1 = flr(MUNDO_ANCHO / 2) -- Posiciれはn x del primer れくrbol
+        local puerta_x2 = puerta_x1 + 1 -- Posiciれはn x del segundo れくrbol
+        local puerta_y = 1 -- Parte superior del mapa (lれとnea 1)
 
-        -- Cambiar los árboles por terreno (tile con valor 16)
+        -- Cambiar los れくrboles por terreno (tile con valor 16)
         mapa[puerta_y][puerta_x1] = 16
         mapa[puerta_y][puerta_x2] = 16
     end
 end
 
--- Actualiza la función de _update para verificar si se debe abrir la puerta
+-- Actualiza la funciれはn de _update para verificar si se debe abrir la puerta
 
 function _update()
     -- Actualizar jugador
@@ -289,12 +289,12 @@ function _draw()
 
     -- Dibujar enemigos
     for enemigo in all(enemigos) do
-        -- Invertir el sprite dependiendo de la dirección
+        -- Invertir el sprite dependiendo de la direcciれはn
         if enemigo.direccion == 1 then
-            spr(5, enemigo.x, enemigo.y) -- Sprite mirando a la derecha
-        else
             spr(5, enemigo.x + enemigo.ancho, enemigo.y, 1, 1, true) -- Sprite mirando a la izquierda
-        end
+          else    
+            spr(5, enemigo.x, enemigo.y) -- Sprite mirando a la derecha
+         end
     end
 
     -- Dibujar flechas
@@ -308,8 +308,8 @@ __gfx__
 00000000000aa0000000000000000000000000000000330000000000000000000000000000000000000000000000000000000000000000000000000000000000
 0000000000aaaa000000000000000000000000000003300000000000000000000000000000000000000000000000000000000000000000000000000000000000
 007007000a5aa5a00000000000000000000000000008800700000000000000000000000000000000000000000000000000000000000000000000000000000000
-00077000a9aaaa9a0000000000000000000000000088880d00000000000000000000000000000000000000000000000000000000000000000000000000000000
-00077000aaaaa5aa0000000000000000000000000088880d00000000000000000000000000000000000000000000000000000000000000000000000000000000
+00077000aaaaaaaa0000000000000000000000000088880d00000000000000000000000000000000000000000000000000000000000000000000000000000000
+00077000aa5aa5aa0000000000000000000000000088880d00000000000000000000000000000000000000000000000000000000000000000000000000000000
 007007000aa55aa00000000000000000000000000008885d00000000000000000000000000000000000000000000000000000000000000000000000000000000
 0000000000aaaa000000000000000000000000000008880d00000000000000000000000000000000000000000000000000000000000000000000000000000000
 00000000000aa0000000000000000000000000000088800d00000000000000000000000000000000000000000000000000000000000000000000000000000000
