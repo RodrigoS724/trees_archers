@@ -2,7 +2,6 @@ pico-8 cartridge // http://www.pico-8.com
 version 42
 __lua__
 function _init()
-    -- Posiciれはn inicial del jugador
     player_x = 8
     player_y = 112
     size_chunk = 8
@@ -14,28 +13,20 @@ function _init()
 end
 
 function _update()
-    -- Crear las variables para las nuevas posiciones del jugador
     local new_x = player_x
     local new_y = player_y
 
-    -- Mover segれむn la entrada del jugador
     if btnp(0) then
-        -- Izquierda
         new_x = player_x - size_chunk
     elseif btnp(1) then
-        -- Derecha
         new_x = player_x + size_chunk
     elseif btnp(2) then
-        -- Arriba
         new_y = player_y - size_chunk
     elseif btnp(3) then
-        -- Abajo
         new_y = player_y + size_chunk
     end
 
-    -- Verificar colisiones con れくrboles antes de actualizar la posiciれはn
     if not colision_detected(new_x, new_y) then
-        -- Si no hay colisiれはn, actualizar la posiciれはn del jugador
         player_x = new_x
         player_y = new_y
     end
@@ -43,21 +34,18 @@ end
 
 function _draw()
     cls()
-    -- Dibujar el mapa
     map(0, 0, 0, 0, screen_size_x / size_chunk, screen_size_y / size_chunk)
-    -- Dibujar al jugador
     spr(33, 8 * 8, 0, 1, 1, true, false)
     spr(sprite_player, player_x, player_y)
 end
 
 function generate_map()
-    -- Generar un mapa donde los bordes sean れくrboles (sprite 32) y el resto sea el suelo (sprite 16)
     for y = 0, screen_size_x / size_chunk - 1 do
         for x = 0, screen_size_y / size_chunk - 1 do
             if x == 0 or x == screen_size_y / size_chunk - 1 or y == 0 or y == screen_size_x / size_chunk - 1 then
-                mset(x, y, 32) -- れ▒rboles
+                mset(x, y, 32)
             else
-                mset(x, y, 16) -- Suelo
+                mset(x, y, 16) 
             end
         end
     end
@@ -65,21 +53,16 @@ function generate_map()
     mset(7, 0, 33)
 end
 
--- Funciれはn para verificar colisiones con los れくrboles
 function colision_detected(new_x, new_y)
-    -- Convertir la posiciれはn del jugador en coordenadas del tile
     local tile_x = flr(new_x / size_chunk)
     local tile_y = flr(new_y / size_chunk)
-    -- Obtener el sprite en esa posiciれはn
     local sprite_colision = mget(tile_x, tile_y)
     
-    -- Si el sprite es 32 (れくrbol), devolver true para indicar colisiれはn
     if sprite_colision == 32 then
         return true
     elseif sprite_colision == 33 then
         return true
     end
-    -- No hay colisiれはn
     return false
 end
 
