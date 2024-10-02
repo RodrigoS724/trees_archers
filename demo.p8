@@ -84,21 +84,26 @@ end
 
 
 function Enemigo:Movimiento()
-    -- Mover en la direcciれはn actual
+    -- Mover en la dirección actual
     local dx = self.direccion * self.velocidad
 
-    if not ColisionConTerrenoCompleto(self.x + dx, self.y, self.ancho, self.alto) then
+    -- Ajustar la posición de colisión según la dirección del enemigo
+    local col_x = self.x + (self.direccion == -1 and 0 or self.ancho)
+
+    -- Colisión con el terreno usando el borde del sprite
+    if not ColisionConTerrenoCompleto(col_x + dx, self.y, self.ancho, self.alto) then
         self.x += dx
     else
-        -- Cambiar de direcciれはn al colisionar
+        -- Cambiar de dirección al colisionar
         self.direccion *= -1
     end
 
-    -- Verificar colisiれはn con el jugador
+    -- Verificar colisión con el jugador
     if self:ColisionConJugador() then
-        Jugador:Morir() -- Llamar a la funciれはn de morir del jugador
+        Jugador:Morir() -- Llamar a la función de morir del jugador
     end
 end
+
 
 function Enemigo:ColisionConJugador()
     if self.x < jugador.x + jugador.ancho
