@@ -7,6 +7,9 @@ jugador = nil
 enemigos = {}
 flechas = {}
 vidas = 3
+puerta_abierta = false -- Nuevo estado para la puerta
+mostrar_mensaje_victoria = false -- Para mostrar mensaje de victoria
+
 
 -- ENTIDAD BASE
 Entidad = {}
@@ -30,6 +33,8 @@ function iniciar_juego()
         add(enemigos, Enemigo:Crear())
     end
     flechas = {}
+    puerta_abierta = false
+    mostrar_mensaje_victoria = false
 end
 
 -- PERSONAJE
@@ -203,12 +208,26 @@ function Enemigo:Destruir()
 end
 
 function VerificarAperturaPuerta()
-    if #enemigos == 0 then
+    if #enemigos == 0 and not puerta_abierta then
+        puerta_abierta = true
         local puerta_x1 = flr(MUNDO_ANCHO / 2)
         local puerta_x2 = puerta_x1 + 1
         local puerta_y = 1
         mapa[puerta_y][puerta_x1] = 16
         mapa[puerta_y][puerta_x2] = 16
+    end
+end
+
+function VerificarVictoria()
+    if puerta_abierta then
+        -- Verificar si el jugador pasa por la puerta
+        local puerta_x = flr(MUNDO_ANCHO / 2) * TILE_SIZE
+        local puerta_y = 0 -- Parte superior del mapa (coordenada y)
+
+        if jugador.x >= puerta_x and jugador.x <= puerta_x + TILE_SIZE
+           and jugador.y <= puerta_y + TILE_SIZE then
+            estado_juego = "victoria"
+        end
     end
 end
 
@@ -238,11 +257,17 @@ function _update()
         for enemigo in all(enemigos) do enemigo:Movimiento() end
 
         VerificarAperturaPuerta()
+        VerificarVictoria()  -- Verificar si el jugador ha ganado
 
         if vidas <= 0 then
             estado_juego = "fin"
         end
     elseif estado_juego == "fin" then
+        if btnp(4) or btnp(5) then
+            estado_juego = "jugando"
+            iniciar_juego()
+        end
+    elseif estado_juego == "victoria" then
         if btnp(4) or btnp(5) then
             estado_juego = "jugando"
             iniciar_juego()
@@ -277,6 +302,9 @@ function _draw()
     elseif estado_juego == "fin" then
         print("has muerto!", 50, 60, 8)
         print("pulsa x para reiniciar", 20, 80, 7)
+    elseif estado_juego == "victoria" then
+        print("¡Felicidades, ganaste!", 20, 50, 11)
+        print("Pulsa x para reiniciar", 20, 80, 7)
     end
 end
 
