@@ -11,6 +11,7 @@ tiempo_entre_disparos = 0.3  -- tiempo entre disparos en segundos
 tiempo_ultimo_disparo = 0     -- temporizador para controlar el delay
 puerta_abierta = false -- Nuevo estado para la puerta
 mostrar_mensaje_victoria = false -- Para mostrar mensaje de victoria
+nivel_actual = 1
 
 -- ENTIDAD BASE
 Entidad = {}
@@ -35,7 +36,7 @@ function iniciar_juego()
         add(enemigos, Enemigo:Crear())
     end
     flechas = {}
-    puerta_abierta = false
+    puerta_abierta = false  -- restablece el estado de la puerta
     mostrar_mensaje_victoria = false
 end
 
@@ -210,6 +211,14 @@ function Mundo:Dibujar()
             spr(mapa[y][x], (x - 1) * TILE_SIZE, (y - 1) * TILE_SIZE)
         end
     end
+    -- redibujar la puerta si estれく abierta
+    if puerta_abierta then
+        local puerta_x1 = flr(MUNDO_ANCHO / 2)
+        local puerta_x2 = puerta_x1 + 1
+        local puerta_y = 1
+        spr(16, puerta_x1 * TILE_SIZE, puerta_y * TILE_SIZE)
+        spr(16, puerta_x2 * TILE_SIZE, puerta_y * TILE_SIZE)
+    end
 end
 
 -- FUNCIONES DE COLISIれ⧗N
@@ -259,15 +268,21 @@ end
 
 function VerificarVictoria()
     if puerta_abierta then
-        -- Verificar si el jugador pasa por la puerta
         local puerta_x = flr(MUNDO_ANCHO / 2) * TILE_SIZE
-        local puerta_y = 0 -- Parte superior del mapa (coordenada y)
+        local puerta_y = 0
 
-        if jugador.x >= puerta_x and jugador.x <= puerta_x + TILE_SIZE
-           and jugador.y <= puerta_y + TILE_SIZE then
+        if jugador.x >= puerta_x and jugador.x <= puerta_x + TILE_SIZE and jugador.y <= puerta_y + TILE_SIZE then
             estado_juego = "victoria"
+            mostrar_mensaje_victoria = true
         end
     end
+end
+
+function avanzar_nivel()
+    nivel_actual += 1
+    Mundo:Generar()
+    iniciar_juego()
+    estado_juego = "jugando"
 end
 
 -- CICLO DEL JUEGO
@@ -337,9 +352,13 @@ function _update()
             iniciar_juego()
         end
     elseif estado_juego == "victoria" then
-        if btnp(4) or btnp(5) then
-            estado_juego = "jugando"
-            iniciar_juego()
+        if mostrar_mensaje_victoria then
+            print("るくfelicitaciones! nivel completado.")
+            -- esperar un botれはn para avanzar al siguiente nivel
+            if btnp(4) or btnp(5) then
+                mostrar_mensaje_victoria = false
+                avanzar_nivel()
+            end
         end
     end
 end
@@ -378,7 +397,9 @@ function _draw()
         print("pulsa x para reiniciar", 20, 80, 7)
     elseif estado_juego == "victoria" then
         print("るくFelicidades, ganaste!", 20, 50, 11)
-        print("Pulsa x para reiniciar", 20, 80, 7)
+        print("toca algun boton para ", 20, 80, 7);
+        print("continuar al", 20, 90, 7);
+        print("siguiente nivel", 20, 100, 7);
     end
 end
 __gfx__
