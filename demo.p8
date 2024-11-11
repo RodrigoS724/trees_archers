@@ -7,9 +7,10 @@ jugador = nil
 enemigos = {}
 flechas = {}
 vidas = 3
+tiempo_entre_disparos = 0.3  -- tiempo entre disparos en segundos
+tiempo_ultimo_disparo = 0     -- temporizador para controlar el delay
 puerta_abierta = false -- Nuevo estado para la puerta
 mostrar_mensaje_victoria = false -- Para mostrar mensaje de victoria
-
 
 -- ENTIDAD BASE
 Entidad = {}
@@ -29,6 +30,7 @@ function iniciar_juego()
     vidas = 3
     jugador = Jugador:Crear()
     enemigos = {}
+    jugador.muerto = false
     for i = 1, 5 do
         add(enemigos, Enemigo:Crear())
     end
@@ -69,12 +71,30 @@ function Jugador:Crear()
     end
 
     local jugador = setmetatable(Personaje.Crear(self, x_inicial, y_inicial, 100), Jugador)
+    jugador.invencible = false  -- estado de invencibilidad
+    jugador.invencibilidad_tiempo = 0  -- temporizador para invencibilidad
     return jugador
 end
 
 function Jugador:Morir()
-    print("¡El jugador ha muerto!")
-    estado_juego = "fin"
+    -- aquれと puedes agregar animaciones o efectos de muerte
+    print("el jugador ha muerto!")
+    jugador.muerto = true
+    estado_juego = "fin"  -- cambiar el estado del juego a "fin"
+end
+
+function Jugador:activar_invencibilidad()
+    self.invencible = true
+    self.invencibilidad_tiempo = 2  -- 2 segundos de invencibilidad, puedes ajustar esto
+end
+
+function Jugador:actualizar_invencibilidad()
+    if self.invencible then
+        self.invencibilidad_tiempo -= 1 / 30  -- reduce el tiempo cada frame (a 30 fps)
+        if self.invencibilidad_tiempo <= 0 then
+            self.invencible = false  -- desactivar la invencibilidad cuando se acabe el tiempo
+        end
+    end
 end
 
 -- ENEMIGO
@@ -83,11 +103,28 @@ Enemigo.__index = Enemigo
 
 function Enemigo:Crear()
     local x_aleatorio, y_aleatorio
+    local max_intentos = 100  -- nれむmero mれくximo de intentos para encontrar una posiciれはn vれくlida
+    local intentos = 0
+
     repeat
         x_aleatorio = flr(rnd(MUNDO_ANCHO - 2)) + 2
         y_aleatorio = flr(rnd(MUNDO_ALTO - 3)) + 2
-    until mapa[y_aleatorio][x_aleatorio] ~= 32 and y_aleatorio ~= flr(jugador.y / TILE_SIZE) + 1
+        intentos += 1
 
+        -- verificar que la posiciれはn no estれた ocupada por un bloque sれはlido (32) y que sea accesible
+    until mapa[y_aleatorio][x_aleatorio] ~= 32 and not ColisionConEnemigos({x = x_aleatorio, y = y_aleatorio, ancho = self.ancho, alto = self.alto}) and intentos < max_intentos
+
+    -- si alcanzamos el lれとmite de intentos, damos por imposible el spawn
+    if intentos == max_intentos then
+        -- aquれと podemos implementar algれむn tipo de soluciれはn de fallback
+        return nil
+    end
+
+    -- inicializamos las propiedades ancho y alto si no se han asignado
+    self.ancho = self.ancho or 8  -- aれねadido
+    self.alto = self.alto or 8    -- aれねadido
+
+    -- si encontramos una posiciれはn vれくlida, generamos el enemigo
     local enemigo = setmetatable(Personaje.Crear(self, x_aleatorio * TILE_SIZE, y_aleatorio * TILE_SIZE, 50), Enemigo)
     enemigo.direccion = -1
     enemigo.velocidad = 1
@@ -102,19 +139,19 @@ function Enemigo:Movimiento()
     else
         self.direccion *= -1
     end
-    if self:ColisionConJugador() then
-        Jugador:Morir()
-    end
 end
 
 function Enemigo:ColisionConJugador()
     if self.x < jugador.x + jugador.ancho
-            and self.x + self.ancho > jugador.x
-            and self.y < jugador.y + jugador.alto
-            and self.y + self.alto > jugador.y then
-        vidas -= 1
-        if vidas <= 0 then
-            Jugador:Morir()
+        and self.x + self.ancho > jugador.x
+        and self.y < jugador.y + jugador.alto
+        and self.y + self.alto > jugador.y then
+        if not jugador.muerto and not jugador.invencible then  -- verificar que no estれた muerto ni invencible
+            vidas -= 1
+            jugador:activar_invencibilidad()  -- activar invencibilidad temporal
+            if vidas <= 0 then
+                jugador:Morir()
+            end
         end
         return true
     end
@@ -125,15 +162,17 @@ end
 Flecha = setmetatable({}, Entidad)
 Flecha.__index = Flecha
 
-function Flecha:Crear(x, y, velocidad)
+function Flecha:Crear(x, y, velocidad_x, velocidad_y)
     local flecha = setmetatable(Entidad.Crear(self, x, y), Flecha)
-    flecha.velocidad = velocidad or 2
+    flecha.velocidad_x = velocidad_x or 0
+    flecha.velocidad_y = velocidad_y or 0
     flecha.ancho = 4
     return flecha
 end
 
 function Flecha:Comportamiento()
-    self.y -= self.velocidad
+    self.x += self.velocidad_x
+    self.y += self.velocidad_y
     if ColisionConTerrenoCompleto(self.x + (8 - self.ancho) / 2, self.y, self.ancho, self.alto) or ColisionConEnemigos(self) then
         self:Destruir()
     end
@@ -173,7 +212,7 @@ function Mundo:Dibujar()
     end
 end
 
--- FUNCIONES DE COLISIÓN
+-- FUNCIONES DE COLISIれ⧗N
 function ColisionConTerrenoCompleto(x, y, ancho, alto)
     local tile_x1 = flr(x / TILE_SIZE) + 1
     local tile_y1 = flr(y / TILE_SIZE) + 1
@@ -238,6 +277,12 @@ function _init()
 end
 
 function _update()
+				if jugador.muerto then
+								if btnp(4) or btnp(5) then
+            estado_juego = "jugando"
+            iniciar_juego()
+        end
+				end
     if estado_juego == "inicio" then
         if btnp(4) or btnp(5) then
             estado_juego = "jugando"
@@ -249,16 +294,40 @@ function _update()
         if btn(2) then jugador:Movimiento(0, -1) end
         if btn(3) then jugador:Movimiento(0, 1) end
 
-        if btnp(4) then
-            add(flechas, Flecha:Crear(jugador.x, jugador.y, 3))
+								jugador:actualizar_invencibilidad()
+								
+        -- verificar si ha pasado el tiempo suficiente para disparar
+        tiempo_ultimo_disparo += 1 / 30  -- contamos el tiempo (30 fps)
+        
+        if btnp(4) and tiempo_ultimo_disparo >= tiempo_entre_disparos then
+            -- lれはgica para disparar
+            if btn(0) then -- izquierda
+                add(flechas, Flecha:Crear(jugador.x, jugador.y, -3, 0)) -- dispara a la izquierda
+            elseif btn(1) then -- derecha
+                add(flechas, Flecha:Crear(jugador.x, jugador.y, 3, 0)) -- dispara a la derecha
+            elseif btn(2) then -- arriba
+                add(flechas, Flecha:Crear(jugador.x, jugador.y, 0, -3)) -- dispara arriba
+            elseif btn(3) then -- abajo
+                add(flechas, Flecha:Crear(jugador.x, jugador.y, 0, 3)) -- dispara abajo
+            else
+                add(flechas, Flecha:Crear(jugador.x, jugador.y, 0, -3)) -- por defecto dispara arriba
+            end
+            -- reiniciar el temporizador
+            tiempo_ultimo_disparo = 0
         end
 
+        -- actualizar flechas y enemigos
         for flecha in all(flechas) do flecha:Comportamiento() end
-        for enemigo in all(enemigos) do enemigo:Movimiento() end
+								for enemigo in all(enemigos) do
+								    enemigo:Movimiento()
+								    enemigo:ColisionConJugador()  -- agrega esta lれとnea
+								end
 
+        -- verificar la victoria
         VerificarAperturaPuerta()
-        VerificarVictoria()  -- Verificar si el jugador ha ganado
+        VerificarVictoria()
 
+        -- verificar si el jugador muere
         if vidas <= 0 then
             estado_juego = "fin"
         end
@@ -282,8 +351,13 @@ function _draw()
         print("pulsa x para comenzar", 30, 60, 7)
     elseif estado_juego == "jugando" then
         Mundo:Dibujar()
-        spr(1, jugador.x, jugador.y)
-
+        if jugador.invencible then
+            -- mostrar el jugador de forma diferente si estれく invencible (p. ej., cambiando de color)
+            spr(1, jugador.x, jugador.y, 1, 1, true)  -- cambio de sprite
+        else
+            spr(1, jugador.x, jugador.y)
+        end
+        
         for enemigo in all(enemigos) do
             if enemigo.direccion == 1 then
                 spr(5, enemigo.x + enemigo.ancho, enemigo.y, 1, 1, true)
@@ -303,12 +377,10 @@ function _draw()
         print("has muerto!", 50, 60, 8)
         print("pulsa x para reiniciar", 20, 80, 7)
     elseif estado_juego == "victoria" then
-        print("¡Felicidades, ganaste!", 20, 50, 11)
+        print("るくFelicidades, ganaste!", 20, 50, 11)
         print("Pulsa x para reiniciar", 20, 80, 7)
     end
 end
-
-
 __gfx__
 00000000000aa0000000000000000000000000000000330000000000000000000000000000000000000000000000000000000000000000000000000000000000
 0000000000aaaa000000000000000000000000000003300000000000000000000000000000000000000000000000000000000000000000000000000000000000
