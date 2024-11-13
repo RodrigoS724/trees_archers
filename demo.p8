@@ -14,7 +14,13 @@ mostrar_mensaje_victoria = false -- Para mostrar mensaje de victoria
 nivel_actual = 1
 
 -- ENTIDAD BASE
-Entidad = {}
+Entidad = {
+	x=10,
+	y=20,
+	ancho=8,
+	alto=8,
+}
+
 Entidad.__index = Entidad
 
 function Entidad:Crear(x, y)
@@ -32,11 +38,20 @@ function iniciar_juego()
     jugador = Jugador:Crear()
     enemigos = {}
     jugador.muerto = false
+
     for i = 1, 5 do
-        add(enemigos, Enemigo:Crear())
+        add(enemigos, Enemigo:Crear())  -- enemigo tipo 1 (sprite 5)
     end
+    
+    -- agregar el nuevo enemigo tipo 2 segれむn el nivel
+    if nivel_actual >= 2 then
+        for i = 1, flr(nivel_actual / 2) do
+            add(enemigos, enemigo_tipo2:crear())  -- enemigo tipo 2 (sprite 6)
+        end
+    end
+    
     flechas = {}
-    puerta_abierta = false  -- restablece el estado de la puerta
+    puerta_abierta = false
     mostrar_mensaje_victoria = false
 end
 
@@ -129,6 +144,7 @@ function Enemigo:Crear()
     local enemigo = setmetatable(Personaje.Crear(self, x_aleatorio * TILE_SIZE, y_aleatorio * TILE_SIZE, 50), Enemigo)
     enemigo.direccion = -1
     enemigo.velocidad = 1
+    enemigo.sprite = 5
     return enemigo
 end
 
@@ -157,6 +173,102 @@ function Enemigo:ColisionConJugador()
         return true
     end
     return false
+end
+
+function Enemigo:RecibirDanio()
+    self.vida -= 10
+    if self.vida <= 0 then
+        self:Destruir()
+    end
+end
+
+function Enemigo:Destruir()
+    del(enemigos, self)
+end
+
+-- nuevo tipo de enemigo que usa el sprite 6 y tiene mれくs vida y lれはgica de persecuciれはn
+enemigo_tipo2 = setmetatable({}, Personaje)
+enemigo_tipo2.__index = enemigo_tipo2
+
+function enemigo_tipo2:crear()
+    local x_aleatorio, y_aleatorio
+    local max_intentos = 100
+    local intentos = 0
+
+    repeat
+        x_aleatorio = flr(rnd(MUNDO_ANCHO - 2)) + 2
+        y_aleatorio = flr(rnd(MUNDO_ALTO - 3)) + 2
+        intentos += 1
+    until mapa[y_aleatorio][x_aleatorio] ~= 32 
+          and not ColisionConEnemigos({x = x_aleatorio, y = y_aleatorio, ancho = self.ancho, alto = self.alto}) 
+          and intentos < max_intentos
+
+    if intentos == max_intentos then
+        return nil
+    end
+    
+    self.ancho = self.ancho or 8  -- aれねadido
+    self.alto = self.alto or 8
+    local enemigo = setmetatable(Personaje.Crear(self, x_aleatorio * TILE_SIZE, y_aleatorio * TILE_SIZE, 100), enemigo_tipo2)
+    enemigo.direccion = -1
+    enemigo.velocidad = 1
+    enemigo.sprite = 6  -- usa el sprite 6
+    enemigo.vida = 100
+    enemigo.rango_det = 32  -- rango en el que detecta al jugador
+    enemigo.velocidad = 0.75  -- velocidad de persecuciれはn
+    return enemigo
+end
+
+function enemigo_tipo2:Movimiento()
+    local dx = jugador.x - self.x
+    local dy = jugador.y - self.y
+    local distancia = sqrt(dx^2 + dy^2)
+
+				print("jugador x: " .. jugador.x .. ", y: " .. jugador.y)
+				
+    -- si el jugador estれく dentro del rango de detecciれはn, perseguir
+    if distancia < self.rango_det then
+        local dir_x = dx > 0 and 1 or -1
+        local dir_y = dy > 0 and 1 or -1
+
+        if abs(dx) > abs(dy) then
+            if not ColisionConTerrenoCompleto(self.x + dir_x * self.velocidad, self.y, self.ancho, self.alto) then
+                self.x += dir_x * self.velocidad
+            end
+        else
+            if not ColisionConTerrenoCompleto(self.x, self.y + dir_y * self.velocidad, self.ancho, self.alto) then
+                self.y += dir_y * self.velocidad
+            end
+        end
+    end
+end
+
+function enemigo_tipo2:ColisionConJugador()
+    if self.x < jugador.x + jugador.ancho
+        and self.x + self.ancho > jugador.x
+        and self.y < jugador.y + jugador.alto
+        and self.y + self.alto > jugador.y then
+        if not jugador.muerto and not jugador.invencible then  -- verificar que no estれた muerto ni invencible
+            vidas -= 1
+            jugador:activar_invencibilidad()  -- activar invencibilidad temporal
+            if vidas <= 0 then
+                jugador:Morir()
+            end
+        end
+        return true
+    end
+    return false
+end
+
+function enemigo_tipo2:RecibirDanio()
+    self.vida -= 10
+    if self.vida <= 0 then
+        self:Destruir()
+    end
+end
+
+function enemigo_tipo2:Destruir()
+    del(enemigos, self)
 end
 
 -- FLECHA
@@ -242,17 +354,6 @@ function ColisionConEnemigos(entidad)
         end
     end
     return false
-end
-
-function Enemigo:RecibirDanio()
-    self.vida -= 10
-    if self.vida <= 0 then
-        self:Destruir()
-    end
-end
-
-function Enemigo:Destruir()
-    del(enemigos, self)
 end
 
 function VerificarAperturaPuerta()
@@ -379,9 +480,9 @@ function _draw()
         
         for enemigo in all(enemigos) do
             if enemigo.direccion == 1 then
-                spr(5, enemigo.x + enemigo.ancho, enemigo.y, 1, 1, true)
+                spr(enemigo.sprite, enemigo.x + enemigo.ancho, enemigo.y, 1, 1, true)
             else    
-                spr(5, enemigo.x, enemigo.y)
+                spr(enemigo.sprite, enemigo.x, enemigo.y)
             end
         end
 
