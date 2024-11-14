@@ -10,6 +10,8 @@ recolectables = {}
 vidas = 3
 tiempo_entre_disparos = 0.3  -- tiempo entre disparos en segundos
 tiempo_ultimo_disparo = 0     -- temporizador para controlar el delay
+aumento_vel_ataque = false
+tiempo_aumento_vel_ataque = 0
 puerta_abierta = false -- Nuevo estado para la puerta
 mostrar_mensaje_victoria = false -- Para mostrar mensaje de victoria
 nivel_actual = 1
@@ -35,7 +37,9 @@ end
 
 -- FUNCION PARA INICIAR EL JUEGO
 function iniciar_juego()
-    vidas = 3
+				if es_nuevo_juego then
+								vidas = 3
+				end
     jugador = Jugador:Crear()
     enemigos = {}
     jugador.muerto = false
@@ -44,7 +48,6 @@ function iniciar_juego()
         add(enemigos, Enemigo:Crear())  -- enemigo tipo 1 (sprite 5)
     end
     
-    -- agregar el nuevo enemigo tipo 2 segれむn el nivel
     if nivel_actual >= 2 then
         for i = 1, flr(nivel_actual / 2) do
             add(enemigos, enemigo_tipo2:crear())  -- enemigo tipo 2 (sprite 6)
@@ -114,6 +117,19 @@ function Jugador:actualizar_invencibilidad()
     end
 end
 
+function Jugador:activar_velocidad_ataque()
+				tiempo_entre_disparos = 0.15
+				tiempo_ataque_reducido = true
+				tiempo_ataque_fin = time()+15
+end
+
+function Jugador:actualizar_tiempo_ataque()
+				if tiempo_ataque_reducido and time() > tiempo_ataque_fin then
+								tiempo_entre_disparos = 0.3
+								tiempo_ataque_reducido = false
+				end
+end
+
 -- ENEMIGO
 Enemigo = setmetatable({}, Personaje)
 Enemigo.__index = Enemigo
@@ -180,8 +196,11 @@ function Enemigo:RecibirDanio()
     self.vida -= 10
     if self.vida <= 0 then
         local x, y = self.x, self.y
-        if rnd(1) < 0.5 then
+        if rnd(1) < 0.3 then
 												crear_recolectable(x, y, 1) // tipo 1 es curacion
+								end
+								if rnd(1) < 0.2 then
+												crear_recolectable(x, y, 2) // tipo 2 aumento de vel de ataque
 								end
         self:Destruir()
     end
@@ -268,15 +287,19 @@ end
 function enemigo_tipo2:RecibirDanio()
     self.vida -= 10
     if self.vida <= 0 then
+    				local x, y = self.x, self.y
+    				if rnd(1) < 0.3 then
+												crear_recolectable(x, y, 1) // tipo 1 es curacion
+								end
+								if rnd(1) < 0.2 then
+												crear_recolectable(x, y, 2) // tipo 2 aumento de vel de ataque
+								end
         self:Destruir()
     end
 end
 
 function enemigo_tipo2:Destruir()
-				if rnd(1) < 0.2 then
-								crear_recolectable(enemigo.x, enemigo.y, 1) // tipo 1 es curacion
-				end
-    del(enemigos, self)
+				del(enemigos, self)
 end
 
 -- FLECHA
@@ -306,13 +329,24 @@ end
 --recolectables
 
 function crear_recolectable(x, y, tipo)
-				local recolectable = {
-								x = x,
-								y = y,
-								tipo = tipo,
-								sprite = 65
-				}
-				add(recolectables, recolectable)
+				if (tipo==1) then
+								local recolectable = {
+												x = x,
+												y = y,
+												tipo = tipo,
+												sprite = 65
+								}
+								add(recolectables, recolectable)
+				end
+				if (tipo==2) then
+								local recolectable = {
+												x = x,
+												y = y,
+												tipo = tipo,
+												sprite = 64
+								}
+								add(recolectables, recolectable)
+				end
 end
 
 -- MUNDO
@@ -366,9 +400,12 @@ end
 function colisionconrecolectables()
     for recolectable in all(recolectables) do
         if abs(jugador.x - recolectable.x) < 8 and abs(jugador.y - recolectable.y) < 8 then
-            -- aumenta la vida del jugador si tiene menos del mれくximo permitido
-            vidas += 1
-            -- elimina el recolectable de la tabla
+            if (recolectable.tipo==1) then
+            				vidas += 1
+            end
+            if (recolectable.tipo==2) then
+            				jugador:activar_velocidad_ataque()
+            end
             del(recolectables, recolectable)
         end
     end
@@ -413,27 +450,27 @@ end
 function avanzar_nivel()
     nivel_actual += 1
     Mundo:Generar()
-    iniciar_juego()
+    iniciar_juego(false)
     estado_juego = "jugando"
 end
 
 -- CICLO DEL JUEGO
 function _init()
     Mundo:Generar()
-    iniciar_juego()
+    iniciar_juego(true)
 end
 
 function _update()
 				if jugador.muerto then
 								if btnp(4) or btnp(5) then
             estado_juego = "jugando"
-            iniciar_juego()
+            iniciar_juego(true)
         end
 				end
     if estado_juego == "inicio" then
         if btnp(4) or btnp(5) then
             estado_juego = "jugando"
-            iniciar_juego()
+            iniciar_juego(true)
         end
     elseif estado_juego == "jugando" then
         if btn(0) then jugador:Movimiento(-1, 0) end
@@ -470,6 +507,7 @@ function _update()
 								end
 								
 								colisionconrecolectables()
+								Jugador:actualizar_tiempo_ataque()
 								
         -- verificar la victoria
         VerificarAperturaPuerta()
@@ -482,7 +520,7 @@ function _update()
     elseif estado_juego == "fin" then
         if btnp(4) or btnp(5) then
             estado_juego = "jugando"
-            iniciar_juego()
+            iniciar_juego(true)
         end
     elseif estado_juego == "victoria" then
         if mostrar_mensaje_victoria then
