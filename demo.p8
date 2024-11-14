@@ -6,6 +6,7 @@ estado_juego = "inicio"
 jugador = nil
 enemigos = {}
 flechas = {}
+recolectables = {}
 vidas = 3
 tiempo_entre_disparos = 0.3  -- tiempo entre disparos en segundos
 tiempo_ultimo_disparo = 0     -- temporizador para controlar el delay
@@ -178,6 +179,10 @@ end
 function Enemigo:RecibirDanio()
     self.vida -= 10
     if self.vida <= 0 then
+        local x, y = self.x, self.y
+        if rnd(1) < 0.5 then
+												crear_recolectable(x, y, 1) // tipo 1 es curacion
+								end
         self:Destruir()
     end
 end
@@ -268,6 +273,9 @@ function enemigo_tipo2:RecibirDanio()
 end
 
 function enemigo_tipo2:Destruir()
+				if rnd(1) < 0.2 then
+								crear_recolectable(enemigo.x, enemigo.y, 1) // tipo 1 es curacion
+				end
     del(enemigos, self)
 end
 
@@ -293,6 +301,18 @@ end
 
 function Flecha:Destruir()
     del(flechas, self)
+end
+
+--recolectables
+
+function crear_recolectable(x, y, tipo)
+				local recolectable = {
+								x = x,
+								y = y,
+								tipo = tipo,
+								sprite = 65
+				}
+				add(recolectables, recolectable)
 end
 
 -- MUNDO
@@ -341,6 +361,17 @@ function ColisionConTerrenoCompleto(x, y, ancho, alto)
     local tile_y2 = flr((y + alto - 1) / TILE_SIZE) + 1
     return (mapa[tile_y1] and (mapa[tile_y1][tile_x1] == 32 or mapa[tile_y1][tile_x2] == 32)) or
            (mapa[tile_y2] and (mapa[tile_y2][tile_x1] == 32 or mapa[tile_y2][tile_x2] == 32))
+end
+
+function colisionconrecolectables()
+    for recolectable in all(recolectables) do
+        if abs(jugador.x - recolectable.x) < 8 and abs(jugador.y - recolectable.y) < 8 then
+            -- aumenta la vida del jugador si tiene menos del mれくximo permitido
+            vidas += 1
+            -- elimina el recolectable de la tabla
+            del(recolectables, recolectable)
+        end
+    end
 end
 
 function ColisionConEnemigos(entidad)
@@ -428,7 +459,6 @@ function _update()
             else
                 add(flechas, Flecha:Crear(jugador.x, jugador.y, 0, -3)) -- por defecto dispara arriba
             end
-            -- reiniciar el temporizador
             tiempo_ultimo_disparo = 0
         end
 
@@ -438,7 +468,9 @@ function _update()
 								    enemigo:Movimiento()
 								    enemigo:ColisionConJugador()  -- agrega esta lれとnea
 								end
-
+								
+								colisionconrecolectables()
+								
         -- verificar la victoria
         VerificarAperturaPuerta()
         VerificarVictoria()
@@ -489,6 +521,8 @@ function _draw()
         for flecha in all(flechas) do
             spr(48, flecha.x, flecha.y)
         end
+        
+        draw_recolectables()
 
         for i = 1, vidas do
             spr(80, 8 * i, 8)
@@ -501,6 +535,12 @@ function _draw()
         print("toca algun boton para ", 20, 80, 7);
         print("continuar al", 20, 90, 7);
         print("siguiente nivel", 20, 100, 7);
+    end
+end
+
+function draw_recolectables()
+    for recolectable in all(recolectables) do
+        spr(recolectable.sprite, recolectable.x, recolectable.y)
     end
 end
 __gfx__
