@@ -15,6 +15,8 @@ tiempo_aumento_vel_ataque = 0
 puerta_abierta = false -- Nuevo estado para la puerta
 mostrar_mensaje_victoria = false -- Para mostrar mensaje de victoria
 nivel_actual = 1
+curas_recogidas = 0  -- contador de curas recogidas
+tiempo_mostrar_cura = 0  -- temporizador para mostrar el +1
 
 -- ENTIDAD BASE
 Entidad = {
@@ -37,23 +39,34 @@ end
 
 -- FUNCION PARA INICIAR EL JUEGO
 function iniciar_juego()
-				if es_nuevo_juego then
-								vidas = 3
-				end
-    jugador = Jugador:Crear()
-    enemigos = {}
-    jugador.muerto = false
-
-    for i = 1, 5 do
-        add(enemigos, Enemigo:Crear())  -- enemigo tipo 1 (sprite 5)
+    if es_nuevo_juego then
+        vidas = 3
     end
-    
-    if nivel_actual >= 2 then
-        for i = 1, flr(nivel_actual / 2) do
-            add(enemigos, enemigo_tipo2:crear())  -- enemigo tipo 2 (sprite 6)
+
+    jugador = Jugador:Crear()
+
+    -- reiniciar la tabla global de enemigos
+    enemigos = {}
+    local total_enemigos = 5 + nivel_actual -- aumenta la cantidad total de enemigos con el nivel
+
+    -- calcular proporciれはn de enemigos tipo 1 y tipo 2
+    local prob_tipo1 = max(0.8 - (nivel_actual * 0.05), 0.3) -- tipo 1 predomina en niveles bajos
+    local prob_tipo2 = 1 - prob_tipo1 -- tipo 2 incrementa en niveles altos
+
+    for i = 1, total_enemigos do
+        if rnd(1) < prob_tipo1 then
+            -- generar enemigo tipo 1
+            local enemigo = Enemigo:Crear()
+            if enemigo then add(enemigos, enemigo) end
+        else
+            -- generar enemigo tipo 2
+            local enemigo = enemigo_tipo2:crear()
+            if enemigo then add(enemigos, enemigo) end
         end
     end
-    
+
+    -- inicializar otras variables del juego
+    jugador.muerto = false
     flechas = {}
     puerta_abierta = false
     mostrar_mensaje_victoria = false
@@ -136,28 +149,35 @@ Enemigo.__index = Enemigo
 
 function Enemigo:Crear()
     local x_aleatorio, y_aleatorio
-    local max_intentos = 200  -- nれむmero mれくximo de intentos para encontrar una posiciれはn vれくlida
     local intentos = 0
+    local max_intentos = 100 -- lれとmite de intentos para evitar bucles infinitos
 
     repeat
+        -- generar posiciれはn aleatoria dentro del rango vれくlido del mapa
         x_aleatorio = flr(rnd(MUNDO_ANCHO - 2)) + 2
         y_aleatorio = flr(rnd(MUNDO_ALTO - 3)) + 2
         intentos += 1
 
-        -- verificar que la posiciれはn no estれた ocupada por un bloque sれはlido (32) y que sea accesible
-    until mapa[y_aleatorio][x_aleatorio] ~= 32 and not ColisionConEnemigos({x = x_aleatorio, y = y_aleatorio, ancho = self.ancho, alto = self.alto}) and intentos < max_intentos
+        -- verificar que la posiciれはn no estれた atrapada entre dos bloques no transitables
+        local atrapado_horizontal = es_no_transitable(x_aleatorio - 1, y_aleatorio) 
+                                    and es_no_transitable(x_aleatorio + 1, y_aleatorio)
 
-    -- si alcanzamos el lれとmite de intentos, damos por imposible el spawn
+        -- verificar que la posiciれはn sea transitable y no haya colisiones con otros enemigos
+    until not es_no_transitable(x_aleatorio, y_aleatorio)
+        and not atrapado_horizontal
+        and not ColisionConEnemigos({x = x_aleatorio, y = y_aleatorio, ancho = self.ancho, alto = self.alto})
+        and intentos < max_intentos
+
     if intentos == max_intentos then
-        -- aquれと podemos implementar algれむn tipo de soluciれはn de fallback
+        -- si no se encuentra una posiciれはn vれくlida, cancelar la generaciれはn
         return nil
     end
 
-    -- inicializamos las propiedades ancho y alto si no se han asignado
-    self.ancho = self.ancho or 8  -- aれねadido
-    self.alto = self.alto or 8    -- aれねadido
+    -- inicializar propiedades ancho y alto si no estれくn definidas
+    self.ancho = self.ancho or 8
+    self.alto = self.alto or 8
 
-    -- si encontramos una posiciれはn vれくlida, generamos el enemigo
+    -- crear el enemigo en la posiciれはn vれくlida
     local enemigo = setmetatable(Personaje.Crear(self, x_aleatorio * TILE_SIZE, y_aleatorio * TILE_SIZE, 50), Enemigo)
     enemigo.direccion = -1
     enemigo.velocidad = 1
@@ -196,12 +216,15 @@ function Enemigo:RecibirDanio()
     self.vida -= 10
     if self.vida <= 0 then
         local x, y = self.x, self.y
-        if rnd(1) < 0.3 then
-												crear_recolectable(x, y, 1) // tipo 1 es curacion
-								end
-								if rnd(1) < 0.2 then
-												crear_recolectable(x, y, 2) // tipo 2 aumento de vel de ataque
-								end
+
+        -- determinar si cae un recolectable y de quれた tipo
+        local probabilidad = rnd(1) -- nれむmero aleatorio entre 0 y 1
+        if probabilidad < 0.3 then
+            crear_recolectable(x, y, 1) -- tipo 1: curaciれはn
+        elseif probabilidad < 0.45 then
+            crear_recolectable(x, y, 2) -- tipo 2: aumento de velocidad de ataque
+        end
+
         self:Destruir()
     end
 end
@@ -210,38 +233,57 @@ function Enemigo:Destruir()
     del(enemigos, self)
 end
 
--- nuevo tipo de enemigo que usa el sprite 6 y tiene mれくs vida y lれはgica de persecuciれはn
+-- enemigo 2
 enemigo_tipo2 = setmetatable({}, Personaje)
 enemigo_tipo2.__index = enemigo_tipo2
 
 function enemigo_tipo2:crear()
-    local x_aleatorio, y_aleatorio
     local max_intentos = 100
     local intentos = 0
+    local ancho_tiles = 2 -- tamaれねo del enemigo en tiles (2x2)
+    local alto_tiles = 2
+    local x_aleatorio, y_aleatorio
 
     repeat
-        x_aleatorio = flr(rnd(MUNDO_ANCHO - 2)) + 2
-        y_aleatorio = flr(rnd(MUNDO_ALTO - 3)) + 2
+        x_aleatorio = flr(rnd(MUNDO_ANCHO - ancho_tiles)) + 1
+        y_aleatorio = flr(rnd(MUNDO_ALTO - alto_tiles)) + 1
         intentos += 1
-    until mapa[y_aleatorio][x_aleatorio] ~= 32 
-          and not ColisionConEnemigos({x = x_aleatorio, y = y_aleatorio, ancho = self.ancho, alto = self.alto}) 
+    until self:es_posicion_valida(x_aleatorio, y_aleatorio, ancho_tiles, alto_tiles)
+          and not ColisionConEnemigos({x = x_aleatorio, y = y_aleatorio, ancho = ancho_tiles * TILE_SIZE, alto = alto_tiles * TILE_SIZE})
           and intentos < max_intentos
 
     if intentos == max_intentos then
-        return nil
+        return nil -- no se pudo generar un enemigo vれくlido
     end
-    
-    self.ancho = self.ancho or 8  -- aれねadido
-    self.alto = self.alto or 8
+
+    -- inicializaciれはn del enemigo
+    self.ancho = ancho_tiles * TILE_SIZE
+    self.alto = alto_tiles * TILE_SIZE
     local enemigo = setmetatable(Personaje.Crear(self, x_aleatorio * TILE_SIZE, y_aleatorio * TILE_SIZE, 100), enemigo_tipo2)
     enemigo.direccion = -1
-    enemigo.velocidad = 1
-    enemigo.sprite = 6  -- usa el sprite 6
+    enemigo.velocidad = 0.75
+    enemigo.sprite = 6
     enemigo.vida = 100
-    enemigo.rango_det = 32  -- rango en el que detecta al jugador
-    enemigo.velocidad = 0.75  -- velocidad de persecuciれはn
+    enemigo.rango_det = 32
     return enemigo
 end
+
+function enemigo_tipo2:es_posicion_valida(x, y, ancho_tiles, alto_tiles)
+    for ty = y, y + alto_tiles - 1 do
+        for tx = x, x + ancho_tiles - 1 do
+            if mapa[ty] == nil or mapa[ty][tx] == nil or mapa[ty][tx] == 32 then
+                return false -- espacio ocupado o fuera del mapa
+            end
+        end
+    end
+
+    -- verificar que no estれた rodeado lateralmente por bloques intranzitables
+    local izquierda_bloqueada = mapa[y][x - 1] == 32 and mapa[y + alto_tiles - 1][x - 1] == 32
+    local derecha_bloqueada = mapa[y][x + ancho_tiles] == 32 and mapa[y + alto_tiles - 1][x + ancho_tiles] == 32
+
+    return not (izquierda_bloqueada and derecha_bloqueada)
+end
+
 
 function enemigo_tipo2:Movimiento()
     local dx = jugador.x - self.x
@@ -287,13 +329,16 @@ end
 function enemigo_tipo2:RecibirDanio()
     self.vida -= 10
     if self.vida <= 0 then
-    				local x, y = self.x, self.y
-    				if rnd(1) < 0.3 then
-												crear_recolectable(x, y, 1) // tipo 1 es curacion
-								end
-								if rnd(1) < 0.2 then
-												crear_recolectable(x, y, 2) // tipo 2 aumento de vel de ataque
-								end
+        local x, y = self.x, self.y
+
+        -- determinar si cae un recolectable y de quれた tipo
+        local probabilidad = rnd(1) -- nれむmero aleatorio entre 0 y 1
+        if probabilidad < 0.3 then
+            crear_recolectable(x, y, 1) -- tipo 1: curaciれはn
+        elseif probabilidad < 0.45 then
+            crear_recolectable(x, y, 2) -- tipo 2: aumento de velocidad de ataque
+        end
+
         self:Destruir()
     end
 end
@@ -360,13 +405,34 @@ TILE_SIZE = 8
 
 function Mundo:Generar()
     mapa = {}
+    no_transitables = {} -- tabla para guardar las posiciones no transitables
+
     for y = 1, MUNDO_ALTO do
         mapa[y] = {}
         for x = 1, MUNDO_ANCHO do
-            if x == 1 or x == MUNDO_ANCHO or y == 1 or y == MUNDO_ALTO then
-                mapa[y][x] = 32
+            -- primera fila (y == 1) serれく negra (vacれとa o sin elementos visibles)
+            if y == 1 then
+                mapa[y][x] = 0 -- usar un valor que corresponda al color negro o vacれとo
+            -- segunda fila (y == 2) tendrれく los れくrboles (u objetos similares)
+            elseif y == 2 then
+                -- aquれと generamos una hilera de れくrboles
+                if x == 1 or x == MUNDO_ANCHO then
+                    mapa[y][x] = 32 -- un れくrbol en los bordes
+                else
+                    mapa[y][x] = 32 -- れ▒rboles en los otros espacios
+                end
+                add(no_transitables, {x = x, y = y}) -- marcar las posiciones de los れくrboles como no transitables
+            -- para las demれくs filas
+            elseif x == 1 or x == MUNDO_ANCHO or y == MUNDO_ALTO then
+                mapa[y][x] = 32 -- paredes
+                add(no_transitables, {x = x, y = y})
             else
-                mapa[y][x] = (rnd(1) < 0.1) and 32 or 16
+                if rnd(1) < 0.1 then
+                    mapa[y][x] = 32 -- obstれくculo
+                    add(no_transitables, {x = x, y = y})
+                else
+                    mapa[y][x] = 16 -- piso transitable
+                end
             end
         end
     end
@@ -375,7 +441,10 @@ end
 function Mundo:Dibujar()
     for y = 1, MUNDO_ALTO do
         for x = 1, MUNDO_ANCHO do
-            spr(mapa[y][x], (x - 1) * TILE_SIZE, (y - 1) * TILE_SIZE)
+            -- para la primera fila (negra), no dibujamos nada, lo dejamos vacれとo
+            if mapa[y][x] ~= 0 then
+                spr(mapa[y][x], (x - 1) * TILE_SIZE, (y - 1) * TILE_SIZE)
+            end
         end
     end
     -- redibujar la puerta si estれく abierta
@@ -389,6 +458,16 @@ function Mundo:Dibujar()
 end
 
 -- FUNCIONES DE COLISIれ⧗N
+function es_no_transitable(x, y)
+    for obstaculo in all(no_transitables) do
+        if obstaculo.x == x and obstaculo.y == y then
+            return true -- la posiciれはn es no transitable
+        end
+    end
+    return false -- la posiciれはn es transitable
+end
+
+
 function ColisionConTerrenoCompleto(x, y, ancho, alto)
     local tile_x1 = flr(x / TILE_SIZE) + 1
     local tile_y1 = flr(y / TILE_SIZE) + 1
@@ -401,11 +480,13 @@ end
 function colisionconrecolectables()
     for recolectable in all(recolectables) do
         if abs(jugador.x - recolectable.x) < 8 and abs(jugador.y - recolectable.y) < 8 then
-            if (recolectable.tipo==1) then
-            				vidas += 1
+            if recolectable.tipo == 1 then
+                vidas += 1
+                curas_recogidas += 1  -- incrementar el contador de curas
+                tiempo_mostrar_cura = 60 * 2  -- mostrar el +1 durante 2 segundos (60 fps)
             end
-            if (recolectable.tipo==2) then
-            				jugador:activar_velocidad_ataque()
+            if recolectable.tipo == 2 then
+                jugador:activar_velocidad_ataque()
             end
             del(recolectables, recolectable)
         end
@@ -428,9 +509,9 @@ end
 function VerificarAperturaPuerta()
     if #enemigos == 0 and not puerta_abierta then
         puerta_abierta = true
-        local puerta_x1 = flr(MUNDO_ANCHO / 2)
+        local puerta_x1 = flr(MUNDO_ANCHO / 2)-1
         local puerta_x2 = puerta_x1 + 1
-        local puerta_y = 1
+        local puerta_y = 2
         mapa[puerta_y][puerta_x1] = 16
         mapa[puerta_y][puerta_x2] = 16
     end
@@ -438,8 +519,8 @@ end
 
 function VerificarVictoria()
     if puerta_abierta then
-        local puerta_x = flr(MUNDO_ANCHO / 2) * TILE_SIZE
-        local puerta_y = 0
+        local puerta_x = (flr(MUNDO_ANCHO / 2)-1) * TILE_SIZE
+        local puerta_y = 2
 
         if jugador.x >= puerta_x and jugador.x <= puerta_x + TILE_SIZE and jugador.y <= puerta_y + TILE_SIZE then
             estado_juego = "victoria"
@@ -522,6 +603,7 @@ function _update()
         if btnp(4) or btnp(5) then
             estado_juego = "jugando"
             iniciar_juego(true)
+											 vidas=3
         end
     elseif estado_juego == "victoria" then
         if mostrar_mensaje_victoria then
@@ -540,6 +622,15 @@ function _draw()
         print("flechas y semillas", 40, 40, 7)
         print("pulsa x para comenzar", 30, 60, 7)
     elseif estado_juego == "jugando" then
+        for i = 1, vidas do
+            spr(80, 8 * i-8, 0)
+        end
+        if tiempo_mostrar_cura > 0 then
+            print("+1", 8 * (vidas), 0, 8)  -- cambia la posiciれはn segれむn donde quieras mostrarlo
+            tiempo_mostrar_cura -= 1  -- disminuir el temporizador en cada cuadro
+        end
+   					print("enemigos "..#enemigos, 40, 0, 7)
+        print("nivel: " .. nivel_actual, 95, 0, 7)
         Mundo:Dibujar()
         if jugador.invencible then
             -- mostrar el jugador de forma diferente si estれく invencible (p. ej., cambiando de color)
@@ -557,7 +648,6 @@ function _draw()
         end
 
         for flecha in all(flechas) do
-        print(flecha.direccion)
         				if(flecha.direccion==0) then--izq
         								spr(49, flecha.x, flecha.y)
         				elseif(flecha.direccion==1) then --derecha
@@ -570,10 +660,6 @@ function _draw()
         end
         
         draw_recolectables()
-
-        for i = 1, vidas do
-            spr(80, 8 * i, 8)
-        end
     elseif estado_juego == "fin" then
         print("has muerto!", 50, 60, 8)
         print("pulsa x para reiniciar", 20, 80, 7)
@@ -587,7 +673,8 @@ end
 
 function draw_recolectables()
     for recolectable in all(recolectables) do
-        spr(recolectable.sprite, recolectable.x, recolectable.y)
+        local flotacion = sin((time() * 2) + recolectable.x) * 1.5
+        spr(recolectable.sprite, recolectable.x, recolectable.y + flotacion)
     end
 end
 __gfx__
