@@ -491,12 +491,12 @@ function colisionconrecolectables()
             if recolectable.tipo == 1 then
                 vidas += 1
                 curas_recogidas += 1 -- incrementar el contador de curas
-                tiempo_mostrar_cura = 60 * 2 -- mostrar el +1 durante 2 segundos (60 fps)
+                tiempo_mostrar_cura = 30 * 2 -- mostrar el +1 durante 2 segundos (60 fps)
             end
             if recolectable.tipo == 2 then
                 jugador:activar_velocidad_ataque()
                 aumento_recodigos += 1
-                tiempo_mostrar_aumento = 60 * 15
+                tiempo_mostrar_aumento = 30 * 15
             end
             del(recolectables, recolectable)
         end
@@ -654,7 +654,6 @@ function _draw()
         end
         if tiempo_mostrar_aumento > 0 then
             spr(51, 8 * vidas, 0)
-            print(tiempo_mostrar_aumento, 0, 0, 7)
             tiempo_mostrar_aumento -= 1
             x_offset += 8
         end
