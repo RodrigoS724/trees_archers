@@ -243,7 +243,7 @@ function Enemigo:ColisionConJugador()
 end
 
 function Enemigo:RecibirDanio()
-    self.vida -= 10
+    self.vida -= 20
     if self.vida <= 0 then
         local x, y = self.x, self.y
 
