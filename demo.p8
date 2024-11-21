@@ -192,19 +192,26 @@ function Enemigo:Crear()
     -- crear el enemigo en la posiciれはn vれくlida
     local enemigo = setmetatable(Personaje.Crear(self, x_aleatorio * TILE_SIZE, y_aleatorio * TILE_SIZE, 50), Enemigo)
     enemigo.direccion = -1
-    enemigo.velocidad = 1
+    enemigo.velocidad = 0.9
     enemigo.sprite = 5
     return enemigo
 end
 
 function Enemigo:Movimiento()
+    -- Tiempo mínimo entre inversiones de dirección
+    local retraso_inversion = 1.5  -- Ajusta según sea necesario
+
     -- Movimiento lateral (horizontal)
     local dx = self.direccion * self.velocidad
     local col_x = self.x + (self.direccion == -1 and 0 or self.ancho)
     if not ColisionConTerrenoCompleto(col_x + dx, self.y, self.ancho, self.alto) then
         self.x += dx
     else
-        self.direccion *= -1 -- Cambiar direcciれはn si colisiona lateralmente
+        -- Cambiar dirección solo si ha pasado suficiente tiempo
+        if t() - (self.tiempo_invertido or 0) > retraso_inversion then
+            self.direccion *= -1
+            self.tiempo_invertido = t()
+        end
     end
 
     -- Movimiento vertical (subir y bajar)
@@ -212,9 +219,11 @@ function Enemigo:Movimiento()
     if not ColisionConTerrenoCompleto(self.x, nuevo_y, self.ancho, self.alto) then
         self.y = nuevo_y
     else
-        enemigo1_direccion *= -1 -- Cambiar direcciれはn si colisiona con el fondo o techo
+        enemigo1_direccion *= -1 -- Cambiar dirección si colisiona con el fondo o techo
     end
 end
+
+
 function Enemigo:ColisionConJugador()
     if self.x < jugador.x + jugador.ancho
             and self.x + self.ancho > jugador.x
