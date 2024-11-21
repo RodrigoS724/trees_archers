@@ -8,24 +8,24 @@ enemigos = {}
 flechas = {}
 recolectables = {}
 vidas = 3
-tiempo_entre_disparos = 0.3  -- tiempo entre disparos en segundos
-tiempo_ultimo_disparo = 0     -- temporizador para controlar el delay
+tiempo_entre_disparos = 0.3 -- tiempo entre disparos en segundos
+tiempo_ultimo_disparo = 0 -- temporizador para controlar el delay
 aumento_vel_ataque = false
 tiempo_aumento_vel_ataque = 0
 puerta_abierta = false -- Nuevo estado para la puerta
 mostrar_mensaje_victoria = false -- Para mostrar mensaje de victoria
 nivel_actual = 1
-curas_recogidas = 0  -- contador de curas recogidas
-tiempo_mostrar_cura = 0  -- temporizador para mostrar el +1
+curas_recogidas = 0 -- contador de curas recogidas
+tiempo_mostrar_cura = 0 -- temporizador para mostrar el +1
 aumento_recodigos = 0
 tiempo_mostrar_aumento = 0
 
 -- ENTIDAD BASE
 Entidad = {
-	x=10,
-	y=20,
-	ancho=8,
-	alto=8,
+    x = 10,
+    y = 20,
+    ancho = 8,
+    alto = 8
 }
 
 Entidad.__index = Entidad
@@ -49,11 +49,14 @@ function iniciar_juego()
 
     -- reiniciar la tabla global de enemigos
     enemigos = {}
-    local total_enemigos = 5 + nivel_actual -- aumenta la cantidad total de enemigos con el nivel
+    local total_enemigos = 5 + nivel_actual
+    -- aumenta la cantidad total de enemigos con el nivel
 
     -- calcular proporciれはn de enemigos tipo 1 y tipo 2
-    local prob_tipo1 = max(0.8 - (nivel_actual * 0.05), 0.3) -- tipo 1 predomina en niveles bajos
-    local prob_tipo2 = 1 - prob_tipo1 -- tipo 2 incrementa en niveles altos
+    local prob_tipo1 = max(0.8 - (nivel_actual * 0.05), 0.3)
+    -- tipo 1 predomina en niveles bajos
+    local prob_tipo2 = 1 - prob_tipo1
+    -- tipo 2 incrementa en niveles altos
 
     for i = 1, total_enemigos do
         if rnd(1) < prob_tipo1 then
@@ -106,8 +109,10 @@ function Jugador:Crear()
     end
 
     local jugador = setmetatable(Personaje.Crear(self, x_inicial, y_inicial, 100), Jugador)
-    jugador.invencible = false  -- estado de invencibilidad
-    jugador.invencibilidad_tiempo = 0  -- temporizador para invencibilidad
+    jugador.invencible = false
+    -- estado de invencibilidad
+    jugador.invencibilidad_tiempo = 0
+    -- temporizador para invencibilidad
     return jugador
 end
 
@@ -115,34 +120,36 @@ function Jugador:Morir()
     -- aquれと puedes agregar animaciones o efectos de muerte
     print("el jugador ha muerto!")
     jugador.muerto = true
-    estado_juego = "fin"  -- cambiar el estado del juego a "fin"
+    estado_juego = "fin"
+    -- cambiar el estado del juego a "fin"
 end
 
 function Jugador:activar_invencibilidad()
     self.invencible = true
-    self.invencibilidad_tiempo = 2  -- 2 segundos de invencibilidad, puedes ajustar esto
+    self.invencibilidad_tiempo = 2
+    -- 2 segundos de invencibilidad, puedes ajustar esto
 end
 
 function Jugador:actualizar_invencibilidad()
     if self.invencible then
-        self.invencibilidad_tiempo -= 1 / 30  -- reduce el tiempo cada frame (a 30 fps)
+        self.invencibilidad_tiempo -= 1 / 30 -- reduce el tiempo cada frame (a 30 fps)
         if self.invencibilidad_tiempo <= 0 then
-            self.invencible = false  -- desactivar la invencibilidad cuando se acabe el tiempo
+            self.invencible = false -- desactivar la invencibilidad cuando se acabe el tiempo
         end
     end
 end
 
 function Jugador:activar_velocidad_ataque()
-				tiempo_entre_disparos = 0.15
-				tiempo_ataque_reducido = true
-				tiempo_ataque_fin = time()+15
+    tiempo_entre_disparos = 0.15
+    tiempo_ataque_reducido = true
+    tiempo_ataque_fin = time() + 15
 end
 
 function Jugador:actualizar_tiempo_ataque()
-				if tiempo_ataque_reducido and time() > tiempo_ataque_fin then
-								tiempo_entre_disparos = 0.3
-								tiempo_ataque_reducido = false
-				end
+    if tiempo_ataque_reducido and time() > tiempo_ataque_fin then
+        tiempo_entre_disparos = 0.3
+        tiempo_ataque_reducido = false
+    end
 end
 
 -- ENEMIGO
@@ -152,23 +159,25 @@ Enemigo.__index = Enemigo
 function Enemigo:Crear()
     local x_aleatorio, y_aleatorio
     local intentos = 0
-    local max_intentos = 100 -- lれとmite de intentos para evitar bucles infinitos
+    local max_intentos = 100
+    -- lれとmite de intentos para evitar bucles infinitos
 
     repeat
-        -- generar posiciれはn aleatoria dentro del rango vれくlido del mapa
         x_aleatorio = flr(rnd(MUNDO_ANCHO - 2)) + 2
         y_aleatorio = flr(rnd(MUNDO_ALTO - 3)) + 2
         intentos += 1
 
+        local atrapado_horizontal = es_no_transitable(x_aleatorio - 1, y_aleatorio)
+                and es_no_transitable(x_aleatorio + 1, y_aleatorio)
+        -- generar posiciれはn aleatoria dentro del rango vれくlido del mapa
+
         -- verificar que la posiciれはn no estれた atrapada entre dos bloques no transitables
-        local atrapado_horizontal = es_no_transitable(x_aleatorio - 1, y_aleatorio) 
-                                    and es_no_transitable(x_aleatorio + 1, y_aleatorio)
 
         -- verificar que la posiciれはn sea transitable y no haya colisiones con otros enemigos
     until not es_no_transitable(x_aleatorio, y_aleatorio)
-        and not atrapado_horizontal
-        and not ColisionConEnemigos({x = x_aleatorio, y = y_aleatorio, ancho = self.ancho, alto = self.alto})
-        and intentos < max_intentos
+            and not atrapado_horizontal
+            and not ColisionConEnemigos({ x = x_aleatorio, y = y_aleatorio, ancho = self.ancho, alto = self.alto })
+            and intentos < max_intentos
 
     if intentos == max_intentos then
         -- si no se encuentra una posiciれはn vれくlida, cancelar la generaciれはn
@@ -190,7 +199,7 @@ end
 function Enemigo:Movimiento()
     local dx = self.direccion * self.velocidad
     local col_x = self.x + (self.direccion == -1 and 0 or self.ancho)
-    if not ColisionConTerrenoCompleto(col_x + dx, self.y, self.ancho, self.alto) then
+	    if not ColisionConTerrenoCompleto(col_x + dx, self.y, self.ancho, self.alto) then
         self.x += dx
     else
         self.direccion *= -1
@@ -199,12 +208,13 @@ end
 
 function Enemigo:ColisionConJugador()
     if self.x < jugador.x + jugador.ancho
-        and self.x + self.ancho > jugador.x
-        and self.y < jugador.y + jugador.alto
-        and self.y + self.alto > jugador.y then
-        if not jugador.muerto and not jugador.invencible then  -- verificar que no estれた muerto ni invencible
+            and self.x + self.ancho > jugador.x
+            and self.y < jugador.y + jugador.alto
+            and self.y + self.alto > jugador.y then
+        if not jugador.muerto and not jugador.invencible then
+            -- verificar que no estれた muerto ni invencible
             vidas -= 1
-            jugador:activar_invencibilidad()  -- activar invencibilidad temporal
+            jugador:activar_invencibilidad() -- activar invencibilidad temporal
             if vidas <= 0 then
                 jugador:Morir()
             end
@@ -242,7 +252,8 @@ enemigo_tipo2.__index = enemigo_tipo2
 function enemigo_tipo2:crear()
     local max_intentos = 100
     local intentos = 0
-    local ancho_tiles = 2 -- tamaれねo del enemigo en tiles (2x2)
+    local ancho_tiles = 2
+    -- tamaれねo del enemigo en tiles (2x2)
     local alto_tiles = 2
     local x_aleatorio, y_aleatorio
 
@@ -251,8 +262,8 @@ function enemigo_tipo2:crear()
         y_aleatorio = flr(rnd(MUNDO_ALTO - alto_tiles)) + 1
         intentos += 1
     until self:es_posicion_valida(x_aleatorio, y_aleatorio, ancho_tiles, alto_tiles)
-          and not ColisionConEnemigos({x = x_aleatorio, y = y_aleatorio, ancho = ancho_tiles * TILE_SIZE, alto = alto_tiles * TILE_SIZE})
-          and intentos < max_intentos
+            and not ColisionConEnemigos({ x = x_aleatorio, y = y_aleatorio, ancho = ancho_tiles * TILE_SIZE, alto = alto_tiles * TILE_SIZE })
+            and intentos < max_intentos
 
     if intentos == max_intentos then
         return nil -- no se pudo generar un enemigo vれくlido
@@ -286,14 +297,13 @@ function enemigo_tipo2:es_posicion_valida(x, y, ancho_tiles, alto_tiles)
     return not (izquierda_bloqueada and derecha_bloqueada)
 end
 
-
 function enemigo_tipo2:Movimiento()
     local dx = jugador.x - self.x
     local dy = jugador.y - self.y
-    local distancia = sqrt(dx^2 + dy^2)
+    local distancia = sqrt(dx ^ 2 + dy ^ 2)
 
-				print("jugador x: " .. jugador.x .. ", y: " .. jugador.y)
-				
+    print("jugador x: " .. jugador.x .. ", y: " .. jugador.y)
+
     -- si el jugador estれく dentro del rango de detecciれはn, perseguir
     if distancia < self.rango_det then
         local dir_x = dx > 0 and 1 or -1
@@ -313,12 +323,13 @@ end
 
 function enemigo_tipo2:ColisionConJugador()
     if self.x < jugador.x + jugador.ancho
-        and self.x + self.ancho > jugador.x
-        and self.y < jugador.y + jugador.alto
-        and self.y + self.alto > jugador.y then
-        if not jugador.muerto and not jugador.invencible then  -- verificar que no estれた muerto ni invencible
+            and self.x + self.ancho > jugador.x
+            and self.y < jugador.y + jugador.alto
+            and self.y + self.alto > jugador.y then
+        if not jugador.muerto and not jugador.invencible then
+            -- verificar que no estれた muerto ni invencible
             vidas -= 1
-            jugador:activar_invencibilidad()  -- activar invencibilidad temporal
+            jugador:activar_invencibilidad() -- activar invencibilidad temporal
             if vidas <= 0 then
                 jugador:Morir()
             end
@@ -346,7 +357,7 @@ function enemigo_tipo2:RecibirDanio()
 end
 
 function enemigo_tipo2:Destruir()
-				del(enemigos, self)
+    del(enemigos, self)
 end
 
 -- FLECHA
@@ -377,24 +388,24 @@ end
 --recolectables
 
 function crear_recolectable(x, y, tipo)
-				if (tipo==1) then
-								local recolectable = {
-												x = x,
-												y = y,
-												tipo = tipo,
-												sprite = 65
-								}
-								add(recolectables, recolectable)
-				end
-				if (tipo==2) then
-								local recolectable = {
-												x = x,
-												y = y,
-												tipo = tipo,
-												sprite = 64
-								}
-								add(recolectables, recolectable)
-				end
+    if (tipo == 1) then
+        local recolectable = {
+            x = x,
+            y = y,
+            tipo = tipo,
+            sprite = 65
+        }
+        add(recolectables, recolectable)
+    end
+    if (tipo == 2) then
+        local recolectable = {
+            x = x,
+            y = y,
+            tipo = tipo,
+            sprite = 64
+        }
+        add(recolectables, recolectable)
+    end
 end
 
 -- MUNDO
@@ -407,7 +418,8 @@ TILE_SIZE = 8
 
 function Mundo:Generar()
     mapa = {}
-    no_transitables = {} -- tabla para guardar las posiciones no transitables
+    no_transitables = {}
+    -- tabla para guardar las posiciones no transitables
 
     for y = 1, MUNDO_ALTO do
         mapa[y] = {}
@@ -415,7 +427,7 @@ function Mundo:Generar()
             -- primera fila (y == 1) serれく negra (vacれとa o sin elementos visibles)
             if y == 1 then
                 mapa[y][x] = 0 -- usar un valor que corresponda al color negro o vacれとo
-            -- segunda fila (y == 2) tendrれく los れくrboles (u objetos similares)
+                -- segunda fila (y == 2) tendrれく los れくrboles (u objetos similares)
             elseif y == 2 then
                 -- aquれと generamos una hilera de れくrboles
                 if x == 1 or x == MUNDO_ANCHO then
@@ -423,15 +435,15 @@ function Mundo:Generar()
                 else
                     mapa[y][x] = 32 -- れ▒rboles en los otros espacios
                 end
-                add(no_transitables, {x = x, y = y}) -- marcar las posiciones de los れくrboles como no transitables
-            -- para las demれくs filas
+                add(no_transitables, { x = x, y = y }) -- marcar las posiciones de los れくrboles como no transitables
+                -- para las demれくs filas
             elseif x == 1 or x == MUNDO_ANCHO or y == MUNDO_ALTO then
                 mapa[y][x] = 32 -- paredes
-                add(no_transitables, {x = x, y = y})
+                add(no_transitables, { x = x, y = y })
             else
                 if rnd(1) < 0.1 then
                     mapa[y][x] = 32 -- obstれくculo
-                    add(no_transitables, {x = x, y = y})
+                    add(no_transitables, { x = x, y = y })
                 else
                     mapa[y][x] = 16 -- piso transitable
                 end
@@ -466,17 +478,17 @@ function es_no_transitable(x, y)
             return true -- la posiciれはn es no transitable
         end
     end
-    return false -- la posiciれはn es transitable
+    return false
+    -- la posiciれはn es transitable
 end
-
 
 function ColisionConTerrenoCompleto(x, y, ancho, alto)
     local tile_x1 = flr(x / TILE_SIZE) + 1
     local tile_y1 = flr(y / TILE_SIZE) + 1
     local tile_x2 = flr((x + ancho - 1) / TILE_SIZE) + 1
     local tile_y2 = flr((y + alto - 1) / TILE_SIZE) + 1
-    return (mapa[tile_y1] and (mapa[tile_y1][tile_x1] == 32 or mapa[tile_y1][tile_x2] == 32)) or
-           (mapa[tile_y2] and (mapa[tile_y2][tile_x1] == 32 or mapa[tile_y2][tile_x2] == 32))
+    return (mapa[tile_y1] and (mapa[tile_y1][tile_x1] == 32 or mapa[tile_y1][tile_x2] == 32))
+            or (mapa[tile_y2] and (mapa[tile_y2][tile_x1] == 32 or mapa[tile_y2][tile_x2] == 32))
 end
 
 function colisionconrecolectables()
@@ -484,13 +496,13 @@ function colisionconrecolectables()
         if abs(jugador.x - recolectable.x) < 8 and abs(jugador.y - recolectable.y) < 8 then
             if recolectable.tipo == 1 then
                 vidas += 1
-                curas_recogidas += 1  -- incrementar el contador de curas
-                tiempo_mostrar_cura = 60 * 2  -- mostrar el +1 durante 2 segundos (60 fps)
+                curas_recogidas += 1 -- incrementar el contador de curas
+                tiempo_mostrar_cura = 60 * 2 -- mostrar el +1 durante 2 segundos (60 fps)
             end
             if recolectable.tipo == 2 then
                 jugador:activar_velocidad_ataque()
                 aumento_recodigos += 1
-                tiempo_mostrar_aumento = 60*15
+                tiempo_mostrar_aumento = 60 * 15
             end
             del(recolectables, recolectable)
         end
@@ -513,7 +525,7 @@ end
 function VerificarAperturaPuerta()
     if #enemigos == 0 and not puerta_abierta then
         puerta_abierta = true
-        local puerta_x1 = flr(MUNDO_ANCHO / 2)-1
+        local puerta_x1 = flr(MUNDO_ANCHO / 2) - 1
         local puerta_x2 = puerta_x1 + 1
         local puerta_y = 2
         mapa[puerta_y][puerta_x1] = 16
@@ -523,7 +535,7 @@ end
 
 function VerificarVictoria()
     if puerta_abierta then
-        local puerta_x = (flr(MUNDO_ANCHO / 2)-1) * TILE_SIZE
+        local puerta_x = (flr(MUNDO_ANCHO / 2) - 1) * TILE_SIZE
         local puerta_y = 2
 
         if jugador.x >= puerta_x and jugador.x <= puerta_x + TILE_SIZE and jugador.y <= puerta_y + TILE_SIZE then
@@ -542,17 +554,21 @@ end
 
 -- CICLO DEL JUEGO
 function _init()
+    
     Mundo:Generar()
     iniciar_juego(true)
 end
 
 function _update()
-				if jugador.muerto then
-								if btnp(4) or btnp(5) then
+    if not stat(57) then
+        music(0)
+    end
+        if jugador.muerto then
+        if btnp(4) or btnp(5) then
             estado_juego = "jugando"
             iniciar_juego(true)
         end
-				end
+    end
     if estado_juego == "inicio" then
         if btnp(4) or btnp(5) then
             estado_juego = "jugando"
@@ -564,20 +580,25 @@ function _update()
         if btn(2) then jugador:Movimiento(0, -1) end
         if btn(3) then jugador:Movimiento(0, 1) end
 
-								jugador:actualizar_invencibilidad()
-								
+        jugador:actualizar_invencibilidad()
+
         -- verificar si ha pasado el tiempo suficiente para disparar
-        tiempo_ultimo_disparo += 1 / 30  -- contamos el tiempo (30 fps)
-        
+        tiempo_ultimo_disparo += 1 / 30 -- contamos el tiempo (30 fps)
+
         if btnp(4) and tiempo_ultimo_disparo >= tiempo_entre_disparos then
+            sfx(0)
             -- lれはgica para disparar
-            if btn(0) then -- izquierda
+            if btn(0) then
+                -- izquierda
                 add(flechas, Flecha:Crear(jugador.x, jugador.y, -3, 0, 0)) -- dispara a la izquierda
-            elseif btn(1) then -- derecha
+            elseif btn(1) then
+                -- derecha
                 add(flechas, Flecha:Crear(jugador.x, jugador.y, 3, 0, 1)) -- dispara a la derecha
-            elseif btn(2) then -- arriba
+            elseif btn(2) then
+                -- arriba
                 add(flechas, Flecha:Crear(jugador.x, jugador.y, 0, -3, 2)) -- dispara arriba
-            elseif btn(3) then -- abajo
+            elseif btn(3) then
+                -- abajo
                 add(flechas, Flecha:Crear(jugador.x, jugador.y, 0, 3, 3)) -- dispara abajo
             else
                 add(flechas, Flecha:Crear(jugador.x, jugador.y, 0, -3, 2)) -- por defecto dispara arriba
@@ -586,15 +607,17 @@ function _update()
         end
 
         -- actualizar flechas y enemigos
-        for flecha in all(flechas) do flecha:Comportamiento() end
-								for enemigo in all(enemigos) do
-								    enemigo:Movimiento()
-								    enemigo:ColisionConJugador()  -- agrega esta lれとnea
-								end
-								
-								colisionconrecolectables()
-								Jugador:actualizar_tiempo_ataque()
-								
+        for flecha in all(flechas) do
+            flecha:Comportamiento()
+        end
+        for enemigo in all(enemigos) do
+            enemigo:Movimiento()
+            enemigo:ColisionConJugador() -- agrega esta linea
+        end
+
+        colisionconrecolectables()
+        Jugador:actualizar_tiempo_ataque()
+
         -- verificar la victoria
         VerificarAperturaPuerta()
         VerificarVictoria()
@@ -607,7 +630,7 @@ function _update()
         if btnp(4) or btnp(5) then
             estado_juego = "jugando"
             iniciar_juego(true)
-											 vidas=3
+            vidas = 3
         end
     elseif estado_juego == "victoria" then
         if mostrar_mensaje_victoria then
@@ -627,67 +650,66 @@ function _draw()
         print("pulsa x para comenzar", 30, 60, 7)
     elseif estado_juego == "jugando" then
         for i = 1, vidas do
-            spr(80, 8 * i-8, 0)
+            spr(80, 8 * i - 8, 0)
         end
-        local x_offset = 8 * (vidas)
+        local x_offset = 8 * vidas
         if tiempo_mostrar_cura > 0 then
-            print("+1", 8 * (vidas), 0, 8)  -- cambia la posiciれはn segれむn donde quieras mostrarlo
-            tiempo_mostrar_cura -= 1  -- disminuir el temporizador en cada cuadro
+            print("+1", 8 * vidas, 0, 8) -- cambia la posiciれはn segれむn donde quieras mostrarlo
+            tiempo_mostrar_cura -= 1 -- disminuir el temporizador en cada cuadro
             x_offset += 8
         end
         if tiempo_mostrar_aumento > 0 then
-        				spr(51, 8*(vidas), 0)
-        				print(tiempo_mostrar_aumento, 0, 0, 7)
-        				tiempo_mostrar_aumento -= 1
-	           x_offset += 8
+            spr(51, 8 * vidas, 0)
+            print(tiempo_mostrar_aumento, 0, 0, 7)
+            tiempo_mostrar_aumento -= 1
+            x_offset += 8
         end
-   					print("enemigos "..#enemigos, 50, 0, 7)
+        print("enemigos " .. #enemigos, 50, 0, 7)
         print("nivel: " .. nivel_actual, 95, 0, 7)
         Mundo:Dibujar()
-        local y=0
-        for enemigo in all(enemigos) do
-//        				print("x: " .. enemigo.x .. " y: " .. enemigo.y, 0, y+1, 11)
-        y+=10
-        end
         if jugador.invencible then
             -- alternar visibilidad del sprite para crear el parpadeo
-            if flr(time() / 0.2) % 2 == 0 then  -- parpadeo cada 0.2 segundos
+            if flr(time() / 0.2) % 2 == 0 then
+                -- parpadeo cada 0.2 segundos
                 spr(1, jugador.x, jugador.y)
             end
         else
             spr(1, jugador.x, jugador.y)
         end
 
-        
         for enemigo in all(enemigos) do
             if enemigo.direccion == 1 then
                 spr(enemigo.sprite, enemigo.x + enemigo.ancho, enemigo.y, 1, 1, true)
-            else    
+            else
                 spr(enemigo.sprite, enemigo.x, enemigo.y)
             end
         end
 
         for flecha in all(flechas) do
-        				if(flecha.direccion==0) then--izq
-        								spr(49, flecha.x, flecha.y)
-        				elseif(flecha.direccion==1) then --derecha
-        								spr(49, flecha.x, flecha.y, 1, 1, true, true)
-        				elseif(flecha.direccion==2) then --arriba
-        								spr(48, flecha.x, flecha.y)
-        				elseif(flecha.direccion==3) then --abajo
-        								spr(48, flecha.x, flecha.y, 1, 1, false, true)
-        				end
+            if (flecha.direccion == 0) then
+                --izq
+                spr(49, flecha.x, flecha.y)
+            elseif (flecha.direccion == 1) then
+                --derecha
+                spr(49, flecha.x, flecha.y, 1, 1, true, true)
+            elseif (flecha.direccion == 2) then
+                --arriba
+                spr(48, flecha.x, flecha.y)
+            elseif (flecha.direccion == 3) then
+                --abajo
+                spr(48, flecha.x, flecha.y, 1, 1, false, true)
+            end
         end
-        
+
         draw_recolectables()
     elseif estado_juego == "fin" then
         print("has muerto!", 50, 60, 8)
         print("pulsa x para reiniciar", 20, 80, 7)
     elseif estado_juego == "victoria" then
         print("るくFelicidades, ganaste!", 20, 50, 11)
-        print("toca algun boton para ", 20, 80, 7);
-        print("continuar al", 20, 90, 7);
-        print("siguiente nivel", 20, 100, 7);
+        print("toca algun boton para ", 20, 80, 7)
+        print("continuar al", 20, 90, 7)
+        print("siguiente nivel", 20, 100, 7)
     end
 end
 
@@ -697,6 +719,7 @@ function draw_recolectables()
         spr(recolectable.sprite, recolectable.x, recolectable.y + flotacion)
     end
 end
+
 __gfx__
 00000000009999000000000000000000000000000000330000880880000000000000000000000000000000000000000000000000000000000000000000000000
 0000000009aaaa900000000000000000000000000003300000888880003333000000000000000000000000000000000000000000000000000000000000000000
@@ -714,22 +737,22 @@ ffffff5f000000000000000000000000000000000000000000000000000000000000000000000000
 fffff5ff000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 ffff5fff000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 ffffffff000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-ff3383ff000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-f333333f000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00338300000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+03333330000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 33383333000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 38333338000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-f333333f000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-fff445ff000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-fff44fff000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-fff44fff000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-000050000000000000000000000000b0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00055500000000000000000000000bbbb00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-000040000050006000000000000000b0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00004000055444400005500006000500000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00004000005000600000000004444550000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00064600000000000000000006000500000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+03333330000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00044000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00044000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00044000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00000000000000000000000000000000600000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00005000000000000000000000066006660000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00055500000000000000000000604000600000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00004000005000600000000006004050000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00004000055444400005500064444455000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00004000005000600000000006004050000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00064600000000000000000000604000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00000000000000000000000000066000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 00000000000000600000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 00007000000006000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
@@ -745,3 +768,71 @@ fff44fff000000000000000000000000000000000000000000000000000000000000000000000000
 08888880000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 00888800000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 00088000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+__sfx__
+010300000d65030d05056301090506650103050000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+01160010183101c3101f3101c31024310283102b31034310000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+011600080c020130200c0201302000020070200002007020000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+011600100000000000000000000000000000000000000000183101c3101f3101c31024310283102b3103431000000000000000000000000000000000000000000000000000000000000000000000000000000000
+011000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+0020000018a5000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+__music__
+00 01020344
+
