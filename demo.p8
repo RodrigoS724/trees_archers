@@ -19,6 +19,8 @@ curas_recogidas = 0 -- contador de curas recogidas
 tiempo_mostrar_cura = 0 -- temporizador para mostrar el +1
 aumento_recodigos = 0
 tiempo_mostrar_aumento = 0
+enemigo1_y_vel = 0.15 -- Velocidad del movimiento vertical
+enemigo1_direccion = 1 -- 1 para abajo, -1 para arriba
 
 -- ENTIDAD BASE
 Entidad = {
@@ -197,15 +199,23 @@ function Enemigo:Crear()
 end
 
 function Enemigo:Movimiento()
+    -- Movimiento lateral (horizontal)
     local dx = self.direccion * self.velocidad
     local col_x = self.x + (self.direccion == -1 and 0 or self.ancho)
-	    if not ColisionConTerrenoCompleto(col_x + dx, self.y, self.ancho, self.alto) then
+    if not ColisionConTerrenoCompleto(col_x + dx, self.y, self.ancho, self.alto) then
         self.x += dx
     else
-        self.direccion *= -1
+        self.direccion *= -1 -- Cambiar dirección si colisiona lateralmente
+    end
+
+    -- Movimiento vertical (subir y bajar)
+    local nuevo_y = self.y + (enemigo1_direccion * enemigo1_y_vel)
+    if not ColisionConTerrenoCompleto(self.x, nuevo_y, self.ancho, self.alto) then
+        self.y = nuevo_y
+    else
+        enemigo1_direccion *= -1 -- Cambiar dirección si colisiona con el fondo o techo
     end
 end
-
 function Enemigo:ColisionConJugador()
     if self.x < jugador.x + jugador.ancho
             and self.x + self.ancho > jugador.x
@@ -554,7 +564,6 @@ end
 
 -- CICLO DEL JUEGO
 function _init()
-    
     Mundo:Generar()
     iniciar_juego(true)
 end
@@ -563,7 +572,7 @@ function _update()
     if not stat(57) then
         music(0)
     end
-        if jugador.muerto then
+    if jugador.muerto then
         if btnp(4) or btnp(5) then
             estado_juego = "jugando"
             iniciar_juego(true)
