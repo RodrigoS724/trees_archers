@@ -162,11 +162,10 @@ function Enemigo:Crear()
     local x_aleatorio, y_aleatorio
     local intentos = 0
     local max_intentos = 100
-    -- lれとmite de intentos para evitar bucles infinitos
 
     repeat
-        x_aleatorio = flr(rnd(MUNDO_ANCHO - 2)) + 2
-        y_aleatorio = flr(rnd(MUNDO_ALTO - 3)) + 2
+        x_aleatorio = flr(rnd(MUNDO_ANCHO - 4)) + 2
+        y_aleatorio = flr(rnd(MUNDO_ALTO - 4)) + 2
         intentos += 1
 
         local atrapado_horizontal = es_no_transitable(x_aleatorio - 1, y_aleatorio)
@@ -205,7 +204,7 @@ function Enemigo:Movimiento()
     if not ColisionConTerrenoCompleto(col_x + dx, self.y, self.ancho, self.alto) then
         self.x += dx
     else
-        self.direccion *= -1 -- Cambiar dirección si colisiona lateralmente
+        self.direccion *= -1 -- Cambiar direcciれはn si colisiona lateralmente
     end
 
     -- Movimiento vertical (subir y bajar)
@@ -213,7 +212,7 @@ function Enemigo:Movimiento()
     if not ColisionConTerrenoCompleto(self.x, nuevo_y, self.ancho, self.alto) then
         self.y = nuevo_y
     else
-        enemigo1_direccion *= -1 -- Cambiar dirección si colisiona con el fondo o techo
+        enemigo1_direccion *= -1 -- Cambiar direcciれはn si colisiona con el fondo o techo
     end
 end
 function Enemigo:ColisionConJugador()
@@ -507,12 +506,12 @@ function colisionconrecolectables()
             if recolectable.tipo == 1 then
                 vidas += 1
                 curas_recogidas += 1 -- incrementar el contador de curas
-                tiempo_mostrar_cura = 60 * 2 -- mostrar el +1 durante 2 segundos (60 fps)
+                tiempo_mostrar_cura = 30 * 2 -- mostrar el +1 durante 2 segundos (60 fps)
             end
             if recolectable.tipo == 2 then
                 jugador:activar_velocidad_ataque()
                 aumento_recodigos += 1
-                tiempo_mostrar_aumento = 60 * 15
+                tiempo_mostrar_aumento = 30 * 15
             end
             del(recolectables, recolectable)
         end
@@ -669,7 +668,6 @@ function _draw()
         end
         if tiempo_mostrar_aumento > 0 then
             spr(51, 8 * vidas, 0)
-            print(tiempo_mostrar_aumento, 0, 0, 7)
             tiempo_mostrar_aumento -= 1
             x_offset += 8
         end
