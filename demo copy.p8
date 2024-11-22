@@ -35,11 +35,20 @@ Entidad.__index = Entidad
 
 function Entidad:Crear(x, y)
     local entidad = setmetatable({}, Entidad)
-    entidad.x = x or 0
-    entidad.y = y or 0
-    entidad.ancho = 8
-    entidad.alto = 8
-    return entidad
+        entidad.x = x or 0
+        entidad.y = y or 0
+        entidad.ancho = 8
+        entidad.alto = 8
+        return entidad
+end
+
+function Entidad:crear_boss(x, y)
+    local entidad = setmetatable({}, Entidad)
+        entidad.x = x or 0
+        entidad.y = y or 0
+        entidad.ancho = 16
+        entidad.alto = 16
+        return entidad
 end
 
 -- FUNCION PARA INICIAR EL JUEGO
@@ -97,14 +106,26 @@ function Personaje:Crear(x, y, vida)
     return personaje
 end
 
+function Personaje:Crear_boss(x, y, vida)
+    local personaje = setmetatable(Entidad.crear_boss(self, x, y), Personaje)
+    personaje.vida = vida or 100
+    return personaje
+end
+
 function Personaje:Movimiento(dx, dy)
+    dx = dx or 0 -- Valor predeterminado si dx es nil
+    dy = dy or 0 -- Valor predeterminado si dy es nil
+
     local nuevo_x = self.x + dx
     local nuevo_y = self.y + dy
+
+    -- Verificar colisiones antes de mover
     if not ColisionConTerrenoCompleto(nuevo_x, nuevo_y, self.ancho, self.alto) then
         self.x = nuevo_x
         self.y = nuevo_y
     end
 end
+
 
 -- JUGADOR
 Jugador = setmetatable({}, Personaje)
@@ -207,7 +228,8 @@ end
 
 function Enemigo:Movimiento()
     -- Tiempo mれとnimo entre inversiones de direcciれはn
-    local retraso_inversion = 1.5  -- Ajusta segれむn sea necesario
+    local retraso_inversion = 1.5
+    -- Ajusta segれむn sea necesario
 
     -- Movimiento lateral (horizontal)
     local dx = self.direccion * self.velocidad
@@ -230,7 +252,6 @@ function Enemigo:Movimiento()
         enemigo1_direccion *= -1 -- Cambiar direcciれはn si colisiona con el fondo o techo
     end
 end
-
 
 function Enemigo:ColisionConJugador()
     if self.x < jugador.x + jugador.ancho
@@ -385,68 +406,43 @@ end
 function enemigo_tipo2:Destruir()
     del(enemigos, self)
 end
-
+--boss}
 enemigo_boss = setmetatable({}, Personaje)
 enemigo_boss.__index = enemigo_boss
 
+
 function enemigo_boss:crear_boss()
-    local ancho_tiles = 4
-    local alto_tiles = 4
+    local ancho_tiles = 8
+    local alto_tiles = 8
+
+    -- Establecer posición fija
     local x_boss = 50
     local y_boss = 50
 
-    -- Establecer dimensiones del boss
+    -- Definir dimensiones del jefe
     self.ancho = ancho_tiles * TILE_SIZE
     self.alto = alto_tiles * TILE_SIZE
 
-    -- Crear el boss en la posición fija
+    -- Crear el jefe en la posición fija
     local enemigo = setmetatable(Personaje.Crear_boss(self, x_boss * TILE_SIZE, y_boss * TILE_SIZE, 300), enemigo_boss)
     enemigo.velocidad = 1.0
+    enemigo.sprite = 128
     enemigo.vida = 300
     enemigo.tiempo_ataque = t() -- Tiempo para controlar ataques
-    enemigo.direccion = 1 -- Dirección de movimiento (1 derecha, -1 izquierda)
     return enemigo
 end
 
-function enemigo_boss:Movimiento()
-    -- Movimiento horizontal del boss
-    self.x += self.direccion * self.velocidad
-    if self.x <= 0 or self.x >= (MUNDO_ANCHO - 1) * TILE_SIZE then
-        self.direccion = -self.direccion -- Cambiar dirección al tocar los límites del mundo
-    end
-end
-
-function enemigo_boss:Atacar()
-    -- Realiza un ataque cada 3 segundos (puedes ajustar el tiempo)
-    if t() - self.tiempo_ataque >= 3 then
-        -- Lógica de ataque (puedes implementar proyectiles o habilidades)
-        print("El boss ha atacado!")
-        self.tiempo_ataque = t() -- Reiniciar el temporizador
-    end
-end
-
-function enemigo_boss:Dibujar()
-    -- Dibujar las 4 partes del boss usando los 4 sprites
-    -- Parte superior izquierda (sprite 128)
-    spr(128, self.x, self.y)
-    -- Parte superior derecha (sprite 129)
-    spr(129, self.x + TILE_SIZE * 2, self.y)
-    -- Parte inferior izquierda (sprite 144)
-    spr(144, self.x, self.y + TILE_SIZE * 2)
-    -- Parte inferior derecha (sprite 145)
-    spr(145, self.x + TILE_SIZE * 2, self.y + TILE_SIZE * 2)
-end
 
 function actualizar_boss()
     if enemigo_boss then
-        enemigo_boss:Movimiento()
-        enemigo_boss:Atacar()
-        enemigo_boss:Dibujar()
+        --enemigo_boss:Movimiento()
+        --enemigo_boss:Atacar()
         if enemigo_boss.vida <= 0 then
-            enemigo_boss:Destruir()
+            --enemigo_boss:Destruir()
         end
     end
 end
+
 
 -- FLECHA
 Flecha = setmetatable({}, Entidad)
@@ -508,7 +504,6 @@ function Mundo:Generar()
     mapa = {}
     no_transitables = {}
     -- tabla para guardar las posiciones no transitables
-
     for y = 1, MUNDO_ALTO do
         mapa[y] = {}
         for x = 1, MUNDO_ANCHO do
