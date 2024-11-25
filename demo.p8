@@ -163,20 +163,30 @@ Enemigo.__index = Enemigo
 function Enemigo:Crear()
     local max_intentos = 100
     local intentos = 0
-    local ancho_tiles = 2 -- Ajusta según el tamaño del enemigo
-    local alto_tiles = 2 -- Ajusta según el tamaño del enemigo
+    local ancho_tiles = 2 -- Tamaño del enemigo en tiles
+    local alto_tiles = 2
     local x_aleatorio, y_aleatorio
 
     repeat
-        -- Generar coordenadas aleatorias dentro del rango del mapa
+        -- Generar posición aleatoria dentro del rango del mapa
         x_aleatorio = flr(rnd(MUNDO_ANCHO - ancho_tiles)) + 1
         y_aleatorio = flr(rnd(MUNDO_ALTO - alto_tiles)) + 1
         intentos += 1
+
+        -- Crear un objeto temporal para verificar colisión
+        local nuevo_enemigo = {
+            x = x_aleatorio * TILE_SIZE,
+            y = y_aleatorio * TILE_SIZE,
+            ancho = ancho_tiles * TILE_SIZE,
+            alto = alto_tiles * TILE_SIZE
+        }
+
     until self:es_posicion_valida(x_aleatorio, y_aleatorio, ancho_tiles, alto_tiles)
+            and not ColisionConEnemigos(nuevo_enemigo)
             and intentos < max_intentos
 
     if intentos == max_intentos then
-        return nil -- No se pudo encontrar una posición válida
+        return nil -- No se encontró una posición válida
     end
 
     -- Crear el enemigo en la posición válida
@@ -188,6 +198,7 @@ function Enemigo:Crear()
     enemigo.sprite = 5
     return enemigo
 end
+
 
 
 
@@ -561,7 +572,7 @@ end
 function VerificarAperturaPuerta()
     if #enemigos == 0 and not puerta_abierta then
         puerta_abierta = true
-        local puerta_centro = flr(MUNDO_ANCHO / 2) -- Centro ajustado del mundo
+        local puerta_centro = flr(MUNDO_ANCHO / 2) + 1  -- Centro ajustado del mundo
         local puerta_x1 = puerta_centro - 1 -- Bloque izquierdo
         local puerta_x2 = puerta_centro -- Bloque derecho
         local puerta_y = 2 -- Fila donde estara la puerta
@@ -575,10 +586,10 @@ end
 
 function VerificarVictoria()
     if puerta_abierta then
-        local puerta_centro = flr(MUNDO_ANCHO / 2) -- Centro del mundo
+        local puerta_centro = flr(MUNDO_ANCHO / 2)  -- Centro del mundo
         local puerta_x1 = (puerta_centro - 1) * TILE_SIZE -- Bloque izquierdo en píxeles
         local puerta_x2 = puerta_centro * TILE_SIZE -- Bloque derecho en píxeles
-        local puerta_y = 2 * TILE_SIZE -- Coordenada Y de la puerta en píxeles
+        local puerta_y = 1 * TILE_SIZE -1 -- Coordenada Y de la puerta en píxeles
 
         -- Asegurar que el jugador esté en la misma fila de la puerta
         if jugador.y >= puerta_y and jugador.y < puerta_y + TILE_SIZE then
