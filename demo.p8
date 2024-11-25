@@ -52,7 +52,7 @@ function iniciar_juego()
 
     -- reiniciar la tabla global de enemigos
     enemigos = {}
-    local total_enemigos = 5 + nivel_actual
+    local total_enemigos = 2 + nivel_actual
     -- aumenta la cantidad total de enemigos con el nivel
 
     -- calcular proporciれはn de enemigos tipo 1 y tipo 2
