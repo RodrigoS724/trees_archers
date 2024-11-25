@@ -90,8 +90,9 @@ function Personaje:Crear(x, y, vida)
 end
 
 function Personaje:Movimiento(dx, dy)
-    local nuevo_x = self.x + dx
-    local nuevo_y = self.y + dy
+    local velocidad = 1.2
+    local nuevo_x = self.x + dx * velocidad
+    local nuevo_y = self.y + dy * velocidad
     if not ColisionConTerrenoCompleto(nuevo_x, nuevo_y, self.ancho, self.alto) then
         self.x = nuevo_x
         self.y = nuevo_y
