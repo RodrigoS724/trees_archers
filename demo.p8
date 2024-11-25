@@ -518,6 +518,10 @@ function Mundo:Dibujar()
     
 end
 
+function Mundo.reiniciar()
+    puerta_abierta = false
+end
+
 -- FUNCIONES DE COLISION
 function es_no_transitable(x, y)
     for obstaculo in all(no_transitables) do
@@ -733,6 +737,7 @@ function _draw()
         end
         print("enemigos " .. #enemigos, 50, 0, 7)
         print("nivel: " .. nivel_actual, 95, 0, 7)
+        Mundo:reiniciar()
         Mundo:Dibujar()
         if jugador.invencible then
             -- alternar visibilidad del sprite para crear el parpadeo
