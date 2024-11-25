@@ -119,7 +119,7 @@ function Jugador:Crear()
 end
 
 function Jugador:Morir()
-    -- aquれと puedes agregar animaciones o efectos de muerte
+    -- aqui puedes agregar animaciones o efectos de muerte
     print("el jugador ha muerto!")
     jugador.muerto = true
     estado_juego = "fin"
@@ -294,7 +294,7 @@ function enemigo_tipo2:crear()
     enemigo.direccion = -1
     enemigo.velocidad = 0.75
     enemigo.sprite = 6
-    enemigo.vida = 100
+    enemigo.vida = 40
     enemigo.rango_det = 32
     return enemigo
 end
