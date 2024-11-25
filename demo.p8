@@ -778,13 +778,13 @@ function _draw()
         print("has muerto!", 50, 60, 8)
         print("pulsa x para reiniciar", 20, 80, 7)
     elseif estado_juego == "victoria" then
-        print("Felicidades, ganaste!", 20, 50, 11)
+        print("felicidades, pasaste!", 20, 50, 11)
         print("toca algun boton para ", 20, 80, 7)
         print("continuar al", 20, 90, 7)
         print("siguiente nivel", 20, 100, 7)
     elseif estado_juego == "finalizacion" then
         -- Mensaje de finalización
-        print("felicitaciones, terminaste el juego!", 10, 50, 11)
+        print("felicitaciones, ganaste!", 10, 50, 11)
         print("gracias por jugar!", 30, 70, 7)
         print("pulsa x para reiniciar", 20, 90, 7)
     end
