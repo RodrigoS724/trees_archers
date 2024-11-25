@@ -479,17 +479,20 @@ function Mundo:Dibujar()
             end
         end
     end
-    -- redibujar la puerta si estれく abierta
     if puerta_abierta then
-        local puerta_x1 = flr(MUNDO_ANCHO / 2)
-        local puerta_x2 = puerta_x1 + 1
-        local puerta_y = 1
-        spr(16, puerta_x1 * TILE_SIZE, puerta_y * TILE_SIZE)
-        spr(16, puerta_x2 * TILE_SIZE, puerta_y * TILE_SIZE)
+        local puerta_centro = flr(MUNDO_ANCHO / 2) -- Centro ajustado
+        local puerta_x1 = (puerta_centro - 1) * TILE_SIZE -- Bloque izquierdo en píxeles
+        local puerta_x2 = puerta_centro * TILE_SIZE -- Bloque derecho en píxeles
+        local puerta_y = 2 * TILE_SIZE -- Coordenada en píxeles del eje Y
+    
+        -- Dibujar los dos bloques de la puerta
+        spr(16, puerta_x1, puerta_y) -- Bloque izquierdo
+        spr(16, puerta_x2, puerta_y) -- Bloque derecho
     end
+    
 end
 
--- FUNCIONES DE COLISIれ⧗N
+-- FUNCIONES DE COLISION
 function es_no_transitable(x, y)
     for obstaculo in all(no_transitables) do
         if obstaculo.x == x and obstaculo.y == y then
@@ -497,7 +500,7 @@ function es_no_transitable(x, y)
         end
     end
     return false
-    -- la posiciれはn es transitable
+    -- la posicion es transitable
 end
 
 function ColisionConTerrenoCompleto(x, y, ancho, alto)
@@ -543,25 +546,37 @@ end
 function VerificarAperturaPuerta()
     if #enemigos == 0 and not puerta_abierta then
         puerta_abierta = true
-        local puerta_x1 = flr(MUNDO_ANCHO / 2) - 1
-        local puerta_x2 = puerta_x1 + 1
-        local puerta_y = 2
+        local puerta_centro = flr(MUNDO_ANCHO / 2) -- Centro ajustado del mundo
+        local puerta_x1 = puerta_centro - 1 -- Bloque izquierdo
+        local puerta_x2 = puerta_centro -- Bloque derecho
+        local puerta_y = 2 -- Fila donde estara la puerta
+
+        -- Actualizar el mapa con los bloques de la puerta
         mapa[puerta_y][puerta_x1] = 16
         mapa[puerta_y][puerta_x2] = 16
     end
 end
 
+
 function VerificarVictoria()
     if puerta_abierta then
-        local puerta_x = (flr(MUNDO_ANCHO / 2) - 1) * TILE_SIZE
-        local puerta_y = 2
+        local puerta_centro = flr(MUNDO_ANCHO / 2) -- Centro del mundo
+        local puerta_x1 = (puerta_centro - 1) * TILE_SIZE -- Bloque izquierdo en píxeles
+        local puerta_x2 = puerta_centro * TILE_SIZE -- Bloque derecho en píxeles
+        local puerta_y = 2 * TILE_SIZE -- Coordenada Y de la puerta en píxeles
 
-        if jugador.x >= puerta_x and jugador.x <= puerta_x + TILE_SIZE and jugador.y <= puerta_y + TILE_SIZE then
-            estado_juego = "victoria"
-            mostrar_mensaje_victoria = true
+        -- Asegurar que el jugador esté en la misma fila de la puerta
+        if jugador.y >= puerta_y and jugador.y < puerta_y + TILE_SIZE then
+            -- Verificar si está en cualquiera de los bloques de la puerta
+            if (jugador.x >= puerta_x1 and jugador.x < puerta_x1 + TILE_SIZE) or
+               (jugador.x >= puerta_x2 and jugador.x < puerta_x2 + TILE_SIZE) then
+                estado_juego = "victoria"
+                mostrar_mensaje_victoria = true
+            end
         end
     end
 end
+
 
 function avanzar_nivel()
     if nivel_actual == 5 then
@@ -732,7 +747,7 @@ function _draw()
         print("has muerto!", 50, 60, 8)
         print("pulsa x para reiniciar", 20, 80, 7)
     elseif estado_juego == "victoria" then
-        print("¡Felicidades, ganaste!", 20, 50, 11)
+        print("Felicidades, ganaste!", 20, 50, 11)
         print("toca algun boton para ", 20, 80, 7)
         print("continuar al", 20, 90, 7)
         print("siguiente nivel", 20, 100, 7)
