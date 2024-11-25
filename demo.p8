@@ -199,7 +199,8 @@ end
 
 function Enemigo:Movimiento()
     -- Tiempo mれとnimo entre inversiones de direcciれはn
-    local retraso_inversion = 1.5  -- Ajusta segれむn sea necesario
+    local retraso_inversion = 1.5
+    -- Ajusta segれむn sea necesario
 
     -- Movimiento lateral (horizontal)
     local dx = self.direccion * self.velocidad
@@ -222,7 +223,6 @@ function Enemigo:Movimiento()
         enemigo1_direccion *= -1 -- Cambiar direcciれはn si colisiona con el fondo o techo
     end
 end
-
 
 function Enemigo:ColisionConJugador()
     if self.x < jugador.x + jugador.ancho
@@ -564,6 +564,10 @@ function VerificarVictoria()
 end
 
 function avanzar_nivel()
+    if nivel_actual == 5 then
+        estado_juego = "finalizacion"
+        return
+    end
     nivel_actual += 1
     Mundo:Generar()
     iniciar_juego(false)
@@ -651,11 +655,17 @@ function _update()
         end
     elseif estado_juego == "victoria" then
         if mostrar_mensaje_victoria then
-            print("るくfelicitaciones! nivel completado.")
+            print("¡felicitaciones! nivel completado.")
             if btnp(4) or btnp(5) then
                 mostrar_mensaje_victoria = false
                 avanzar_nivel()
             end
+        end
+    elseif estado_juego == "finalizacion" then
+        if btnp(4) or btnp(5) then
+            estado_juego = "inicio"
+            nivel_actual = 1
+            iniciar_juego(true)
         end
     end
 end
@@ -722,10 +732,15 @@ function _draw()
         print("has muerto!", 50, 60, 8)
         print("pulsa x para reiniciar", 20, 80, 7)
     elseif estado_juego == "victoria" then
-        print("るくFelicidades, ganaste!", 20, 50, 11)
+        print("¡Felicidades, ganaste!", 20, 50, 11)
         print("toca algun boton para ", 20, 80, 7)
         print("continuar al", 20, 90, 7)
         print("siguiente nivel", 20, 100, 7)
+    elseif estado_juego == "finalizacion" then
+        -- Mensaje de finalización
+        print("felicitaciones, terminaste el juego!", 10, 50, 11)
+        print("gracias por jugar!", 30, 70, 7)
+        print("pulsa x para reiniciar", 20, 90, 7)
     end
 end
 
