@@ -21,6 +21,7 @@ aumento_recodigos = 0
 tiempo_mostrar_aumento = 0
 enemigo1_y_vel = 0.15 -- Velocidad del movimiento vertical
 enemigo1_direccion = 1 -- 1 para abajo, -1 para arriba
+ultimo_movimiento = 0
 
 -- ENTIDAD BASE
 Entidad = {
@@ -612,10 +613,10 @@ function _update()
             iniciar_juego(true)
         end
     elseif estado_juego == "jugando" then
-        if btn(0) then jugador:Movimiento(-1, 0) end
-        if btn(1) then jugador:Movimiento(1, 0) end
-        if btn(2) then jugador:Movimiento(0, -1) end
-        if btn(3) then jugador:Movimiento(0, 1) end
+        if btn(0) then jugador:Movimiento(-1, 0) ultimo_movimiento = 0 end
+        if btn(1) then jugador:Movimiento(1, 0) ultimo_movimiento = 1 end
+        if btn(2) then jugador:Movimiento(0, -1) ultimo_movimiento = 2 end
+        if btn(3) then jugador:Movimiento(0, 1) ultimo_movimiento = 3 end
 
         jugador:actualizar_invencibilidad()
 
@@ -625,16 +626,16 @@ function _update()
         if btnp(4) and tiempo_ultimo_disparo >= tiempo_entre_disparos then
             sfx(0)
             -- lれはgica para disparar
-            if btn(0) then
+            if ultimo_movimiento == 0 then
                 -- izquierda
                 add(flechas, Flecha:Crear(jugador.x, jugador.y, -3, 0, 0)) -- dispara a la izquierda
-            elseif btn(1) then
+            elseif ultimo_movimiento == 1 then
                 -- derecha
                 add(flechas, Flecha:Crear(jugador.x, jugador.y, 3, 0, 1)) -- dispara a la derecha
-            elseif btn(2) then
+            elseif ultimo_movimiento == 2 then
                 -- arriba
                 add(flechas, Flecha:Crear(jugador.x, jugador.y, 0, -3, 2)) -- dispara arriba
-            elseif btn(3) then
+            elseif ultimo_movimiento == 3 then
                 -- abajo
                 add(flechas, Flecha:Crear(jugador.x, jugador.y, 0, 3, 3)) -- dispara abajo
             else
