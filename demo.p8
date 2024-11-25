@@ -161,43 +161,35 @@ Enemigo = setmetatable({}, Personaje)
 Enemigo.__index = Enemigo
 
 function Enemigo:Crear()
-    local x_aleatorio, y_aleatorio
-    local intentos = 0
     local max_intentos = 100
+    local intentos = 0
+    local ancho_tiles = 2 -- Ajusta según el tamaño del enemigo
+    local alto_tiles = 2 -- Ajusta según el tamaño del enemigo
+    local x_aleatorio, y_aleatorio
 
     repeat
-        x_aleatorio = flr(rnd(MUNDO_ANCHO - 4)) + 2
-        y_aleatorio = flr(rnd(MUNDO_ALTO - 4)) + 2
+        -- Generar coordenadas aleatorias dentro del rango del mapa
+        x_aleatorio = flr(rnd(MUNDO_ANCHO - ancho_tiles)) + 1
+        y_aleatorio = flr(rnd(MUNDO_ALTO - alto_tiles)) + 1
         intentos += 1
-
-        local atrapado_horizontal = es_no_transitable(x_aleatorio - 1, y_aleatorio)
-                and es_no_transitable(x_aleatorio + 1, y_aleatorio)
-        -- generar posiciれはn aleatoria dentro del rango vれくlido del mapa
-
-        -- verificar que la posiciれはn no estれた atrapada entre dos bloques no transitables
-
-        -- verificar que la posiciれはn sea transitable y no haya colisiones con otros enemigos
-    until not es_no_transitable(x_aleatorio, y_aleatorio)
-            and not atrapado_horizontal
-            and not ColisionConEnemigos({ x = x_aleatorio, y = y_aleatorio, ancho = self.ancho, alto = self.alto })
+    until self:es_posicion_valida(x_aleatorio, y_aleatorio, ancho_tiles, alto_tiles)
             and intentos < max_intentos
 
     if intentos == max_intentos then
-        -- si no se encuentra una posiciれはn vれくlida, cancelar la generaciれはn
-        return nil
+        return nil -- No se pudo encontrar una posición válida
     end
 
-    -- inicializar propiedades ancho y alto si no estれくn definidas
-    self.ancho = self.ancho or 8
-    self.alto = self.alto or 8
-
-    -- crear el enemigo en la posiciれはn vれくlida
-    local enemigo = setmetatable(Personaje.Crear(self, x_aleatorio * TILE_SIZE, y_aleatorio * TILE_SIZE, 50), Enemigo)
+    -- Crear el enemigo en la posición válida
+    self.ancho = ancho_tiles * TILE_SIZE
+    self.alto = alto_tiles * TILE_SIZE
+    local enemigo = setmetatable(Personaje.Crear(self, x_aleatorio * TILE_SIZE, y_aleatorio * TILE_SIZE, 60), Enemigo)
     enemigo.direccion = -1
-    enemigo.velocidad = 0.9
+    enemigo.velocidad = 0.75
     enemigo.sprite = 5
     return enemigo
 end
+
+
 
 function Enemigo:Movimiento()
     -- Tiempo mれとnimo entre inversiones de direcciれはn
@@ -264,6 +256,27 @@ end
 function Enemigo:Destruir()
     del(enemigos, self)
 end
+
+function Enemigo:es_posicion_valida(x, y, ancho_tiles, alto_tiles)
+    -- Verificar cada tile en el área ocupada por el enemigo
+    for ty = y, y + alto_tiles - 1 do
+        for tx = x, x + ancho_tiles - 1 do
+            -- Comprobar si el mapa tiene el tile y si es transitable
+            if mapa[ty] == nil or mapa[ty][tx] == nil or mapa[ty][tx] == 32 then
+                return false -- Espacio ocupado, no válido
+            end
+        end
+    end
+
+    -- Verificar que el enemigo no esté atrapado entre bloques no transitables
+    local izquierda_bloqueada = mapa[y][x - 1] == 32 and mapa[y + alto_tiles - 1][x - 1] == 32
+    local derecha_bloqueada = mapa[y][x + ancho_tiles] == 32 and mapa[y + alto_tiles - 1][x + ancho_tiles] == 32
+
+    -- Retornar falso si está bloqueado por ambos lados
+    return not (izquierda_bloqueada and derecha_bloqueada)
+end
+
+
 
 -- enemigo 2
 enemigo_tipo2 = setmetatable({}, Personaje)
